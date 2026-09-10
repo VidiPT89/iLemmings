@@ -97,7 +97,7 @@ enum LemmingSprites {
         }
     }
 
-    private static func makeTexture(_ pattern: [String]) -> SKTexture {
+    static func makeCGImage(_ pattern: [String]) -> CGImage? {
         let cols = pattern[0].count
         let rows = pattern.count
         let width = cols * pixelScale
@@ -109,7 +109,7 @@ enum LemmingSprites {
             bitsPerComponent: 8, bytesPerRow: 0,
             space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else {
-            return SKTexture()
+            return nil
         }
 
         for (r, row) in pattern.enumerated() {
@@ -121,7 +121,11 @@ enum LemmingSprites {
             }
         }
 
-        guard let cgImage = ctx.makeImage() else { return SKTexture() }
+        return ctx.makeImage()
+    }
+
+    private static func makeTexture(_ pattern: [String]) -> SKTexture {
+        guard let cgImage = makeCGImage(pattern) else { return SKTexture() }
         let texture = SKTexture(cgImage: cgImage)
         texture.filteringMode = .nearest
         return texture
@@ -134,4 +138,8 @@ enum LemmingSprites {
     static let block: SKTexture = makeTexture(blockFrame)
 
     static let walkAnimation: SKAction = .animate(with: [walk1, walk2], timePerFrame: 0.15)
+
+    /// A CGImage of the walking pose, for SwiftUI decorations (e.g. the
+    /// menu's background walkers) that don't need a full SpriteKit scene.
+    static let standCGImageForUI: CGImage? = makeCGImage(walkFrame1)
 }

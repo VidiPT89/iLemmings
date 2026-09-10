@@ -6,6 +6,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Matches the `.lproj` folder name shipped in Resources.
+    var lprojName: String {
+        switch self {
+        case .pt: return "pt-PT"
+        case .en: return "en"
+        }
+    }
+
     var displayName: String {
         switch self {
         case .pt: return "Português"
@@ -29,6 +37,7 @@ enum LocKey: String {
     case settingsThemeSystem
     case settingsThemeLight
     case settingsThemeDark
+    case settingsSound
     case settingsClose
     case levelsTitle
     case levelLocked
@@ -56,97 +65,15 @@ enum LocKey: String {
     case nextLevel
     case retryLevel
     case backToLevels
+    case packFun
+    case packTricky
+    case packTaxing
+    case packMayhem
 }
 
-private let translations: [AppLanguage: [LocKey: String]] = [
-    .en: [
-        .appName: "iLemmings",
-        .tagline: "Guide them. Save them.",
-        .developedBy: "Developed by David Arsénio Martins",
-        .menuPlay: "Play",
-        .menuLevels: "Levels",
-        .menuSettings: "Settings",
-        .menuContinue: "Continue",
-        .menuQuit: "Quit",
-        .settingsTitle: "Settings",
-        .settingsLanguage: "Language",
-        .settingsTheme: "Appearance",
-        .settingsThemeSystem: "System",
-        .settingsThemeLight: "Light",
-        .settingsThemeDark: "Dark",
-        .settingsClose: "Done",
-        .levelsTitle: "Levels",
-        .levelLocked: "Locked",
-        .hudLemmingsOut: "Out",
-        .hudLemmingsSaved: "Saved",
-        .hudLemmingsNeeded: "Needed",
-        .hudTimeLeft: "Time",
-        .hudPause: "Pause",
-        .skillClimber: "Climber",
-        .skillFloater: "Floater",
-        .skillBomber: "Bomber",
-        .skillBlocker: "Blocker",
-        .skillBuilder: "Builder",
-        .skillBasher: "Basher",
-        .skillMiner: "Miner",
-        .skillDigger: "Digger",
-        .pauseTitle: "Paused",
-        .pauseResume: "Resume",
-        .pauseRestart: "Restart",
-        .pauseMenu: "Main Menu",
-        .levelWinTitle: "Level Complete!",
-        .levelWinBody: "You saved enough lemmings.",
-        .levelLoseTitle: "Level Failed",
-        .levelLoseBody: "Not enough lemmings made it out.",
-        .nextLevel: "Next Level",
-        .retryLevel: "Retry",
-        .backToLevels: "Levels",
-    ],
-    .pt: [
-        .appName: "iLemmings",
-        .tagline: "Guia-os. Salva-os.",
-        .developedBy: "Criado por David Arsénio Martins",
-        .menuPlay: "Jogar",
-        .menuLevels: "Níveis",
-        .menuSettings: "Definições",
-        .menuContinue: "Continuar",
-        .menuQuit: "Sair",
-        .settingsTitle: "Definições",
-        .settingsLanguage: "Idioma",
-        .settingsTheme: "Aparência",
-        .settingsThemeSystem: "Sistema",
-        .settingsThemeLight: "Claro",
-        .settingsThemeDark: "Escuro",
-        .settingsClose: "Concluído",
-        .levelsTitle: "Níveis",
-        .levelLocked: "Bloqueado",
-        .hudLemmingsOut: "No terreno",
-        .hudLemmingsSaved: "Salvos",
-        .hudLemmingsNeeded: "Necessários",
-        .hudTimeLeft: "Tempo",
-        .hudPause: "Pausa",
-        .skillClimber: "Escalador",
-        .skillFloater: "Paraquedas",
-        .skillBomber: "Explosivo",
-        .skillBlocker: "Bloqueador",
-        .skillBuilder: "Construtor",
-        .skillBasher: "Escavador Horizontal",
-        .skillMiner: "Mineiro",
-        .skillDigger: "Escavador Vertical",
-        .pauseTitle: "Em Pausa",
-        .pauseResume: "Retomar",
-        .pauseRestart: "Reiniciar",
-        .pauseMenu: "Menu Principal",
-        .levelWinTitle: "Nível Concluído!",
-        .levelWinBody: "Salvaste lemmings suficientes.",
-        .levelLoseTitle: "Nível Falhado",
-        .levelLoseBody: "Não saíram lemmings suficientes.",
-        .nextLevel: "Próximo Nível",
-        .retryLevel: "Repetir",
-        .backToLevels: "Níveis",
-    ],
-]
-
+/// Loads strings from the real `pt-PT.lproj` / `en.lproj` bundles bundled
+/// with the app, so the in-app language switch doesn't depend on the
+/// device's system language and can flip instantly at runtime.
 final class LocalizationManager: ObservableObject {
     @AppStorage("appLanguage") private var storedLanguage: String = AppLanguage.pt.rawValue
 
@@ -155,8 +82,16 @@ final class LocalizationManager: ObservableObject {
         set { storedLanguage = newValue.rawValue; objectWillChange.send() }
     }
 
+    private var bundle: Bundle {
+        guard let path = Bundle.main.path(forResource: language.lprojName, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            return .main
+        }
+        return bundle
+    }
+
     func string(_ key: LocKey) -> String {
-        translations[language]?[key] ?? translations[.en]?[key] ?? key.rawValue
+        bundle.localizedString(forKey: key.rawValue, value: key.rawValue, table: "Localizable")
     }
 }
 

@@ -11,6 +11,7 @@ struct MainMenuView: View {
         NavigationStack {
             ZStack {
                 Color.brandBackground(for: scheme).ignoresSafeArea()
+                DecorativeWalkersView().ignoresSafeArea()
 
                 VStack(spacing: 28) {
                     Spacer()

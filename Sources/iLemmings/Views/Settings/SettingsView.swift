@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var loc: LocalizationManager
     @EnvironmentObject var theme: ThemeManager
+    @EnvironmentObject var sound: SoundManager
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -30,6 +31,15 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section(loc.string(.settingsSound)) {
+                    Toggle(isOn: Binding(
+                        get: { !sound.isMuted },
+                        set: { sound.isMuted = !$0 }
+                    )) {
+                        Label(loc.string(.settingsSound), systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    }
                 }
 
                 Section {

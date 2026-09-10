@@ -27,6 +27,7 @@ enum LevelLibrary {
         return LevelDefinition(
             id: "level1",
             nameKey: "Green Hills",
+            pack: .fun,
             rows: rows,
             totalLemmings: 10,
             neededToSave: 5,
@@ -54,6 +55,7 @@ enum LevelLibrary {
         return LevelDefinition(
             id: "level2",
             nameKey: "Copper Shaft",
+            pack: .tricky,
             rows: rows,
             totalLemmings: 12,
             neededToSave: 6,
@@ -80,6 +82,7 @@ enum LevelLibrary {
         return LevelDefinition(
             id: "level3",
             nameKey: "Ember Gauntlet",
+            pack: .taxing,
             rows: rows,
             totalLemmings: 14,
             neededToSave: 7,
@@ -89,5 +92,32 @@ enum LevelLibrary {
         )
     }()
 
-    static let all: [LevelDefinition] = [level1, level2, level3]
+    /// The hardest built-in level: narrow bridges over traps with scarce skills.
+    static let level4: LevelDefinition = {
+        let width = 40
+        let air = row(width, [(".", width)])
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
+        let highLedge = row(width, [("#", 10), (".", width - 10)])
+        let trapGap = row(width, [("#", 10), (".", 6), ("T", 3), (".", width - 19 - 1), ("X", 1)])
+        let deepWall = row(width, [(".", width - 8), ("#", 8)])
+        let steelFloor = row(width, [("S", width)])
+
+        var rows: [String] = [air, entranceRow, air, highLedge, air, trapGap]
+        rows.append(contentsOf: Array(repeating: deepWall, count: 8))
+        rows.append(steelFloor)
+
+        return LevelDefinition(
+            id: "level4",
+            nameKey: "Obsidian Descent",
+            pack: .mayhem,
+            rows: rows,
+            totalLemmings: 16,
+            neededToSave: 8,
+            spawnIntervalTicks: 30,
+            timeLimitSeconds: 240,
+            skillCounts: [.builder: 2, .bomber: 2, .basher: 2, .climber: 1, .floater: 1, .blocker: 1]
+        )
+    }()
+
+    static let all: [LevelDefinition] = [level1, level2, level3, level4]
 }

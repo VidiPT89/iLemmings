@@ -8,6 +8,8 @@ final class GameScene: SKScene {
     private var lastUpdateTime: TimeInterval = 0
     private var accumulator: TimeInterval = 0
     private var paused_ = false
+    private var previousStates: [Int: LemState] = [:]
+    private var tickCounter = 0
 
     var onLemmingTapped: ((Int) -> Void)?
 
@@ -66,6 +68,7 @@ final class GameScene: SKScene {
         while accumulator >= step {
             let before = engine.grid
             engine.tick()
+            tickCounter += 1
             if engine.grid != before { terrainChanged = true }
             accumulator -= step
         }
@@ -87,11 +90,81 @@ final class GameScene: SKScene {
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
             updateAppearance(node, for: lem)
+            emitParticles(for: lem, at: target)
+            previousStates[lem.id] = lem.state
         }
         for (id, node) in lemmingNodes where !seen.contains(id) {
             node.removeFromParent()
             lemmingNodes.removeValue(forKey: id)
+            previousStates.removeValue(forKey: id)
         }
+    }
+
+    private func emitParticles(for lem: Lemming, at position: CGPoint) {
+        let wasExploding: Bool
+        if case .exploding = previousStates[lem.id] ?? lem.state { wasExploding = true } else { wasExploding = false }
+
+        switch lem.state {
+        case .basher, .miner, .digger:
+            if tickCounter % 4 == 0 { addParticles(kind: .dust, at: position) }
+        case .dead:
+            if wasExploding { addParticles(kind: .explosion, at: position) }
+        default:
+            break
+        }
+    }
+
+    private enum ParticleKind { case dust, explosion }
+
+    private static let particleTexture: SKTexture = {
+        let size = 6
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return SKTexture() }
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fillEllipse(in: CGRect(x: 0, y: 0, width: size, height: size))
+        guard let image = ctx.makeImage() else { return SKTexture() }
+        return SKTexture(cgImage: image)
+    }()
+
+    private func addParticles(kind: ParticleKind, at position: CGPoint) {
+        let emitter = SKEmitterNode()
+        emitter.particleTexture = Self.particleTexture
+        emitter.position = position
+        emitter.zPosition = 20
+
+        switch kind {
+        case .dust:
+            emitter.particleColor = SKColor(red: 0.62, green: 0.44, blue: 0.25, alpha: 1)
+            emitter.particleBirthRate = 40
+            emitter.numParticlesToEmit = 6
+            emitter.particleLifetime = 0.35
+            emitter.particleSpeed = 18
+            emitter.particleSpeedRange = 10
+            emitter.emissionAngleRange = .pi * 2
+            emitter.particleScale = 0.5
+            emitter.particleAlpha = 0.8
+            emitter.particleAlphaSpeed = -2.0
+
+        case .explosion:
+            emitter.particleColor = SKColor.orange
+            emitter.particleColorBlendFactor = 1
+            emitter.particleBirthRate = 200
+            emitter.numParticlesToEmit = 24
+            emitter.particleLifetime = 0.5
+            emitter.particleSpeed = 60
+            emitter.particleSpeedRange = 40
+            emitter.emissionAngleRange = .pi * 2
+            emitter.particleScale = 0.9
+            emitter.particleScaleSpeed = -1.2
+            emitter.particleAlphaSpeed = -1.8
+        }
+
+        addChild(emitter)
+        let wait = SKAction.wait(forDuration: Double(emitter.particleLifetime) + 0.3)
+        emitter.run(.sequence([wait, .removeFromParent()]))
     }
 
     private func makeLemmingNode(for lem: Lemming) -> SKSpriteNode {

@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @StateObject private var loc = LocalizationManager()
     @StateObject private var theme = ThemeManager()
+    @StateObject private var sound = SoundManager()
     @State private var showSplash = true
 
     var body: some View {
@@ -17,6 +18,7 @@ struct RootView: View {
         }
         .environmentObject(loc)
         .environmentObject(theme)
+        .environmentObject(sound)
         .preferredColorScheme(theme.scheme.colorScheme)
         .animation(.easeInOut(duration: 0.4), value: showSplash)
     }

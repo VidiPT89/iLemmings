@@ -37,6 +37,24 @@ final class GameEngine: ObservableObject {
         self.entrance = found
     }
 
+    /// Reinitializes all mutable state in place (same instance, same level)
+    /// so SwiftUI views bound to this engine via @StateObject keep working
+    /// after a restart instead of going stale against a replaced instance.
+    func reset() {
+        grid = level.rows.map { row in row.compactMap { Tile(rawValue: $0) } }
+        lemmings = []
+        savedCount = 0
+        deadCount = 0
+        spawnedCount = 0
+        secondsRemaining = level.timeLimitSeconds
+        isWon = false
+        isLost = false
+        skillInventory = level.skillCounts
+        selectedSkill = nil
+        tickCounter = 0
+        nextID = 0
+    }
+
     var width: Int { level.width }
     var height: Int { level.height }
 

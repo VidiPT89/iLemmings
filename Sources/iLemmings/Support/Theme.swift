@@ -35,12 +35,13 @@ final class ThemeManager: ObservableObject {
 
 extension Color {
     /// Brand palette derived from ividi.dev — orange, burnt amber, near-black.
-    static let brandOrange = Color(red: 0.98, green: 0.45, blue: 0.09)
-    static let brandAmber = Color(red: 0.85, green: 0.58, blue: 0.09)
-    static let brandDeepAmber = Color(red: 0.62, green: 0.34, blue: 0.05)
-    static let brandBlack = Color(red: 0.07, green: 0.06, blue: 0.05)
-    static let brandCharcoal = Color(red: 0.12, green: 0.10, blue: 0.09)
-    static let brandCream = Color(red: 0.98, green: 0.94, blue: 0.87)
+    /// Backed by Asset Catalog color sets (`Assets.xcassets`), never hardcoded hex.
+    static let brandOrange = Color("BrandOrange")
+    static let brandAmber = Color("BrandAmber")
+    static let brandDeepAmber = Color("BrandDeepAmber")
+    static let brandBlack = Color("BrandBlack")
+    static let brandCharcoal = Color("BrandCharcoal")
+    static let brandCream = Color("BrandCream")
 
     static let brandGradient = LinearGradient(
         colors: [.brandOrange, .brandAmber],

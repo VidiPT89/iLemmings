@@ -68,9 +68,24 @@ struct Lemming: Identifiable {
     var isAlive: Bool { state != .dead && state != .saved }
 }
 
+/// Classic Lemmings difficulty tiers, used to group levels into packs.
+enum LevelPack: String, CaseIterable {
+    case fun, tricky, taxing, mayhem
+
+    var locKey: LocKey {
+        switch self {
+        case .fun: return .packFun
+        case .tricky: return .packTricky
+        case .taxing: return .packTaxing
+        case .mayhem: return .packMayhem
+        }
+    }
+}
+
 struct LevelDefinition: Identifiable {
     let id: String
     let nameKey: String
+    let pack: LevelPack
     let rows: [String]           // ASCII rows, top to bottom, matching Tile raw values
     let totalLemmings: Int
     let neededToSave: Int
@@ -80,4 +95,13 @@ struct LevelDefinition: Identifiable {
 
     var width: Int { rows.first?.count ?? 0 }
     var height: Int { rows.count }
+
+    /// 1-3 stars from how many lemmings were saved and how much time was left.
+    func stars(saved: Int, secondsRemaining: Int) -> Int {
+        guard saved >= neededToSave else { return 0 }
+        if saved >= totalLemmings { return 3 }
+        let bonusThreshold = neededToSave + max(1, (totalLemmings - neededToSave) / 2)
+        if saved >= bonusThreshold || secondsRemaining > timeLimitSeconds / 3 { return 2 }
+        return 1
+    }
 }

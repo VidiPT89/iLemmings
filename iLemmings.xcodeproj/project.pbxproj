@@ -10,11 +10,15 @@
 		0BB24CD0097432976CF04B16 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67132860345F486CAE02F9E2 /* MainMenuView.swift */; };
 		10E96D2999A5E17E27F9F165 /* LevelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62DF52C845673D13BE6FFF44 /* LevelData.swift */; };
 		114B5D1BF8E8A2D431B3BD08 /* GameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7277F96E7B7AFC6E877AE558 /* GameModels.swift */; };
+		1219DC150AE68B1D075FB3AB /* StarsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FD5D3F7FB82BBDCEBC9361 /* StarsStore.swift */; };
+		12BB1C3E5DE8368A0B33862D /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399F887D08D21EA2A6E4C9E7 /* Haptics.swift */; };
 		1BC900F38F20D87247EDFAB0 /* iLemmingsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */; };
 		20E41CAFBB0CDCC5BDBB6650 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C661FB392028D7C8129085A /* Theme.swift */; };
 		22C84F8552F305EB0CA15E32 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB882F0F3A8A48597A09FEEE /* GameView.swift */; };
+		3B6647F2B2C32D51444E3791 /* StarsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FD5D3F7FB82BBDCEBC9361 /* StarsStore.swift */; };
 		3BC032F23A0CF0F9B341CAE7 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67132860345F486CAE02F9E2 /* MainMenuView.swift */; };
 		47A0291B2465D7FC6DAE8FB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2D221E35BED815EC0C560C4D /* Assets.xcassets */; };
+		4DA3257C17389C9C953343EB /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399F887D08D21EA2A6E4C9E7 /* Haptics.swift */; };
 		4FEFC0D42257A626AD736EA5 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A41C4B9449FCC3371D5B11 /* GameScene.swift */; };
 		52B71957538F159D9B7496B1 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5154F090593B38285B43ADDA /* RootView.swift */; };
 		549827C2B0616BF9270CBAA8 /* iLemmingsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */; };
@@ -27,22 +31,32 @@
 		7E853A7585E4929E762DECD3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B90F269DF86295BD3E9E7B /* SplashView.swift */; };
 		88AE740CA4A589E1EDD561AB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C6EEF247C0D16478DC95F9 /* SettingsView.swift */; };
 		8B0ABA13EF523C262D64BC20 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5154F090593B38285B43ADDA /* RootView.swift */; };
+		8C7A693057FB5F8D41FE0817 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D8FC3384067A38EB90F8B4CF /* Localizable.strings */; };
 		92F7E7219881025ACF10AE83 /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710B23ED1A842DE5FF073F41 /* GameEngine.swift */; };
 		94659A79E1CC72C72A14DEDC /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5940BA15B29555D96D180 /* Localization.swift */; };
 		94EAF561112D3FEA02B49F50 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C661FB392028D7C8129085A /* Theme.swift */; };
 		A3FE55CE28569347DCEECBEC /* LevelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */; };
 		A7A8C0BF13D08C360D99B1B2 /* LemmingSprites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */; };
+		AD5601DEA15347D8A2642A29 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B48E805C717F3D2CD62A1F /* SoundManager.swift */; };
 		AF4312EE0874FCAE8B9DCE7D /* GameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7277F96E7B7AFC6E877AE558 /* GameModels.swift */; };
+		B72AA4DC1ED04BF3E1C84585 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B48E805C717F3D2CD62A1F /* SoundManager.swift */; };
+		BDE463101B7B0D7772EF9250 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD79BDF8059440FC9C9FA31C /* ConfettiView.swift */; };
+		C343D1B5923827C819252E31 /* DecorativeWalkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */; };
+		C3D9EFC1A9B011B2CEE3D7D7 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D8FC3384067A38EB90F8B4CF /* Localizable.strings */; };
 		C6597A37F1136301210E03D1 /* LevelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */; };
 		D24B2BDD7ADFF1633FE4107D /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710B23ED1A842DE5FF073F41 /* GameEngine.swift */; };
 		E0F12AE42FFF0E4D2E3257A9 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5940BA15B29555D96D180 /* Localization.swift */; };
+		E79094F3725ACE2DB077CC17 /* DecorativeWalkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */; };
 		EEF2F9CA3B3AC2ED3CEF14C8 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB882F0F3A8A48597A09FEEE /* GameView.swift */; };
+		FEFAF23C4EAD3C6C00E82D11 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD79BDF8059440FC9C9FA31C /* ConfettiView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		16B5940BA15B29555D96D180 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		2D221E35BED815EC0C560C4D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelsView.swift; sourceTree = "<group>"; };
+		37C9C057E9060F013AECFB63 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		399F887D08D21EA2A6E4C9E7 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		5154F090593B38285B43ADDA /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iLemmings-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		62DF52C845673D13BE6FFF44 /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
@@ -53,10 +67,15 @@
 		7C661FB392028D7C8129085A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		95B90F269DF86295BD3E9E7B /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		97C6EEF247C0D16478DC95F9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A0FD5D3F7FB82BBDCEBC9361 /* StarsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarsStore.swift; sourceTree = "<group>"; };
+		A10FBBD82F805B8A69BFBA31 /* pt-PT */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-PT"; path = "pt-PT.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecorativeWalkersView.swift; sourceTree = "<group>"; };
+		B8B48E805C717F3D2CD62A1F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "iLemmings-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iLemmingsApp.swift; sourceTree = "<group>"; };
 		CB882F0F3A8A48597A09FEEE /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		E9A41C4B9449FCC3371D5B11 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
+		FD79BDF8059440FC9C9FA31C /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -64,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				2D221E35BED815EC0C560C4D /* Assets.xcassets */,
+				D8FC3384067A38EB90F8B4CF /* Localizable.strings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -126,6 +146,7 @@
 		7A82583593FD80F54A4F69D9 /* Menu */ = {
 			isa = PBXGroup;
 			children = (
+				AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */,
 				32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */,
 				67132860345F486CAE02F9E2 /* MainMenuView.swift */,
 			);
@@ -153,7 +174,10 @@
 		B5051DBC53791360F7A5A08F /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				399F887D08D21EA2A6E4C9E7 /* Haptics.swift */,
 				16B5940BA15B29555D96D180 /* Localization.swift */,
+				B8B48E805C717F3D2CD62A1F /* SoundManager.swift */,
+				A0FD5D3F7FB82BBDCEBC9361 /* StarsStore.swift */,
 				7C661FB392028D7C8129085A /* Theme.swift */,
 			);
 			path = Support;
@@ -162,6 +186,7 @@
 		C0F69D27788C78391F4AD89E /* Game */ = {
 			isa = PBXGroup;
 			children = (
+				FD79BDF8059440FC9C9FA31C /* ConfettiView.swift */,
 				CB882F0F3A8A48597A09FEEE /* GameView.swift */,
 			);
 			path = Game;
@@ -236,6 +261,7 @@
 			knownRegions = (
 				Base,
 				en,
+				"pt-PT",
 			);
 			mainGroup = 88634E1DCBB91CAA67E86941;
 			minimizedProjectReferenceProxies = 1;
@@ -256,6 +282,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				47A0291B2465D7FC6DAE8FB6 /* Assets.xcassets in Resources */,
+				C3D9EFC1A9B011B2CEE3D7D7 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -264,6 +291,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				57C244A5941CDD01C48AA48C /* Assets.xcassets in Resources */,
+				8C7A693057FB5F8D41FE0817 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,10 +302,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FEFAF23C4EAD3C6C00E82D11 /* ConfettiView.swift in Sources */,
+				E79094F3725ACE2DB077CC17 /* DecorativeWalkersView.swift in Sources */,
 				D24B2BDD7ADFF1633FE4107D /* GameEngine.swift in Sources */,
 				114B5D1BF8E8A2D431B3BD08 /* GameModels.swift in Sources */,
 				5554D278AAA7E96F6345CB7C /* GameScene.swift in Sources */,
 				EEF2F9CA3B3AC2ED3CEF14C8 /* GameView.swift in Sources */,
+				4DA3257C17389C9C953343EB /* Haptics.swift in Sources */,
 				68771C580F0C4599CD1EEBD9 /* LemmingSprites.swift in Sources */,
 				10E96D2999A5E17E27F9F165 /* LevelData.swift in Sources */,
 				A3FE55CE28569347DCEECBEC /* LevelsView.swift in Sources */,
@@ -285,7 +316,9 @@
 				3BC032F23A0CF0F9B341CAE7 /* MainMenuView.swift in Sources */,
 				52B71957538F159D9B7496B1 /* RootView.swift in Sources */,
 				88AE740CA4A589E1EDD561AB /* SettingsView.swift in Sources */,
+				AD5601DEA15347D8A2642A29 /* SoundManager.swift in Sources */,
 				74C27C6C8020AB1454DE9668 /* SplashView.swift in Sources */,
+				1219DC150AE68B1D075FB3AB /* StarsStore.swift in Sources */,
 				20E41CAFBB0CDCC5BDBB6650 /* Theme.swift in Sources */,
 				549827C2B0616BF9270CBAA8 /* iLemmingsApp.swift in Sources */,
 			);
@@ -295,10 +328,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDE463101B7B0D7772EF9250 /* ConfettiView.swift in Sources */,
+				C343D1B5923827C819252E31 /* DecorativeWalkersView.swift in Sources */,
 				92F7E7219881025ACF10AE83 /* GameEngine.swift in Sources */,
 				AF4312EE0874FCAE8B9DCE7D /* GameModels.swift in Sources */,
 				4FEFC0D42257A626AD736EA5 /* GameScene.swift in Sources */,
 				22C84F8552F305EB0CA15E32 /* GameView.swift in Sources */,
+				12BB1C3E5DE8368A0B33862D /* Haptics.swift in Sources */,
 				A7A8C0BF13D08C360D99B1B2 /* LemmingSprites.swift in Sources */,
 				61569B67ECDFD6B8A4FDFEDE /* LevelData.swift in Sources */,
 				C6597A37F1136301210E03D1 /* LevelsView.swift in Sources */,
@@ -306,13 +342,27 @@
 				0BB24CD0097432976CF04B16 /* MainMenuView.swift in Sources */,
 				8B0ABA13EF523C262D64BC20 /* RootView.swift in Sources */,
 				72B383A8FE1DBF8E9A1A285A /* SettingsView.swift in Sources */,
+				B72AA4DC1ED04BF3E1C84585 /* SoundManager.swift in Sources */,
 				7E853A7585E4929E762DECD3 /* SplashView.swift in Sources */,
+				3B6647F2B2C32D51444E3791 /* StarsStore.swift in Sources */,
 				94EAF561112D3FEA02B49F50 /* Theme.swift in Sources */,
 				1BC900F38F20D87247EDFAB0 /* iLemmingsApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		D8FC3384067A38EB90F8B4CF /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				37C9C057E9060F013AECFB63 /* en */,
+				A10FBBD82F805B8A69BFBA31 /* pt-PT */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		06804C463444EAE08786C256 /* Debug */ = {
