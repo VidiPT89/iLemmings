@@ -1,0 +1,542 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0BB24CD0097432976CF04B16 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67132860345F486CAE02F9E2 /* MainMenuView.swift */; };
+		10E96D2999A5E17E27F9F165 /* LevelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62DF52C845673D13BE6FFF44 /* LevelData.swift */; };
+		114B5D1BF8E8A2D431B3BD08 /* GameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7277F96E7B7AFC6E877AE558 /* GameModels.swift */; };
+		1BC900F38F20D87247EDFAB0 /* iLemmingsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */; };
+		20E41CAFBB0CDCC5BDBB6650 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C661FB392028D7C8129085A /* Theme.swift */; };
+		22C84F8552F305EB0CA15E32 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB882F0F3A8A48597A09FEEE /* GameView.swift */; };
+		3BC032F23A0CF0F9B341CAE7 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67132860345F486CAE02F9E2 /* MainMenuView.swift */; };
+		47A0291B2465D7FC6DAE8FB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2D221E35BED815EC0C560C4D /* Assets.xcassets */; };
+		4FEFC0D42257A626AD736EA5 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A41C4B9449FCC3371D5B11 /* GameScene.swift */; };
+		52B71957538F159D9B7496B1 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5154F090593B38285B43ADDA /* RootView.swift */; };
+		549827C2B0616BF9270CBAA8 /* iLemmingsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */; };
+		5554D278AAA7E96F6345CB7C /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A41C4B9449FCC3371D5B11 /* GameScene.swift */; };
+		57C244A5941CDD01C48AA48C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2D221E35BED815EC0C560C4D /* Assets.xcassets */; };
+		61569B67ECDFD6B8A4FDFEDE /* LevelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62DF52C845673D13BE6FFF44 /* LevelData.swift */; };
+		72B383A8FE1DBF8E9A1A285A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C6EEF247C0D16478DC95F9 /* SettingsView.swift */; };
+		74C27C6C8020AB1454DE9668 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B90F269DF86295BD3E9E7B /* SplashView.swift */; };
+		7E853A7585E4929E762DECD3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B90F269DF86295BD3E9E7B /* SplashView.swift */; };
+		88AE740CA4A589E1EDD561AB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C6EEF247C0D16478DC95F9 /* SettingsView.swift */; };
+		8B0ABA13EF523C262D64BC20 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5154F090593B38285B43ADDA /* RootView.swift */; };
+		92F7E7219881025ACF10AE83 /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710B23ED1A842DE5FF073F41 /* GameEngine.swift */; };
+		94659A79E1CC72C72A14DEDC /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5940BA15B29555D96D180 /* Localization.swift */; };
+		94EAF561112D3FEA02B49F50 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C661FB392028D7C8129085A /* Theme.swift */; };
+		A3FE55CE28569347DCEECBEC /* LevelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */; };
+		AF4312EE0874FCAE8B9DCE7D /* GameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7277F96E7B7AFC6E877AE558 /* GameModels.swift */; };
+		C6597A37F1136301210E03D1 /* LevelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */; };
+		D24B2BDD7ADFF1633FE4107D /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710B23ED1A842DE5FF073F41 /* GameEngine.swift */; };
+		E0F12AE42FFF0E4D2E3257A9 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5940BA15B29555D96D180 /* Localization.swift */; };
+		EEF2F9CA3B3AC2ED3CEF14C8 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB882F0F3A8A48597A09FEEE /* GameView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		16B5940BA15B29555D96D180 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		2D221E35BED815EC0C560C4D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelsView.swift; sourceTree = "<group>"; };
+		5154F090593B38285B43ADDA /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iLemmings-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		62DF52C845673D13BE6FFF44 /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
+		67132860345F486CAE02F9E2 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
+		710B23ED1A842DE5FF073F41 /* GameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEngine.swift; sourceTree = "<group>"; };
+		7277F96E7B7AFC6E877AE558 /* GameModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModels.swift; sourceTree = "<group>"; };
+		7C661FB392028D7C8129085A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		95B90F269DF86295BD3E9E7B /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		97C6EEF247C0D16478DC95F9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "iLemmings-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iLemmingsApp.swift; sourceTree = "<group>"; };
+		CB882F0F3A8A48597A09FEEE /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		E9A41C4B9449FCC3371D5B11 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		358091250993FD3BCC729C89 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2D221E35BED815EC0C560C4D /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		4B22925EC439FD9858894142 /* Splash */ = {
+			isa = PBXGroup;
+			children = (
+				95B90F269DF86295BD3E9E7B /* SplashView.swift */,
+			);
+			path = Splash;
+			sourceTree = "<group>";
+		};
+		4BAAAFE70EC93E5090478503 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				710B23ED1A842DE5FF073F41 /* GameEngine.swift */,
+				E9A41C4B9449FCC3371D5B11 /* GameScene.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		5A07DEDC2C867260F498E365 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				97C6EEF247C0D16478DC95F9 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		5C828C8B3BE5A25097C12F6E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				7277F96E7B7AFC6E877AE558 /* GameModels.swift */,
+				62DF52C845673D13BE6FFF44 /* LevelData.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		67862BC6D11FA132010BDB05 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */,
+				540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6B5B5E26C406637EE0E4DA95 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C0F69D27788C78391F4AD89E /* Game */,
+				7A82583593FD80F54A4F69D9 /* Menu */,
+				5A07DEDC2C867260F498E365 /* Settings */,
+				4B22925EC439FD9858894142 /* Splash */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7A82583593FD80F54A4F69D9 /* Menu */ = {
+			isa = PBXGroup;
+			children = (
+				32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */,
+				67132860345F486CAE02F9E2 /* MainMenuView.swift */,
+			);
+			path = Menu;
+			sourceTree = "<group>";
+		};
+		7E7E171587E39C0C24048B79 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */,
+				5154F090593B38285B43ADDA /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		88634E1DCBB91CAA67E86941 = {
+			isa = PBXGroup;
+			children = (
+				E1AE05CA9DF78580A7A48C5D /* iLemmings */,
+				358091250993FD3BCC729C89 /* Resources */,
+				67862BC6D11FA132010BDB05 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B5051DBC53791360F7A5A08F /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				16B5940BA15B29555D96D180 /* Localization.swift */,
+				7C661FB392028D7C8129085A /* Theme.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		C0F69D27788C78391F4AD89E /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				CB882F0F3A8A48597A09FEEE /* GameView.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		E1AE05CA9DF78580A7A48C5D /* iLemmings */ = {
+			isa = PBXGroup;
+			children = (
+				7E7E171587E39C0C24048B79 /* App */,
+				4BAAAFE70EC93E5090478503 /* Engine */,
+				5C828C8B3BE5A25097C12F6E /* Models */,
+				B5051DBC53791360F7A5A08F /* Support */,
+				6B5B5E26C406637EE0E4DA95 /* Views */,
+			);
+			name = iLemmings;
+			path = Sources/iLemmings;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4985D876342AB7596647182A /* iLemmings-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 768EC16C7FAA70BA4E14B475 /* Build configuration list for PBXNativeTarget "iLemmings-iOS" */;
+			buildPhases = (
+				400F68E7B6C11F1ED6BF945D /* Sources */,
+				C38ACE60C7A24BACF46D43EA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "iLemmings-iOS";
+			packageProductDependencies = (
+			);
+			productName = "iLemmings-iOS";
+			productReference = CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CE64E8273C55ECFA9C0FDBFE /* iLemmings-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 45DD9B266536E2FDD9C03E45 /* Build configuration list for PBXNativeTarget "iLemmings-macOS" */;
+			buildPhases = (
+				0FD96C7E6B1CF64CDD28EC2C /* Sources */,
+				58C7FE5419C79703897AEC6A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "iLemmings-macOS";
+			packageProductDependencies = (
+			);
+			productName = "iLemmings-macOS";
+			productReference = 540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		02A9EC79C1B37601408D1335 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 51C0D68FFBCE7F35AC017264 /* Build configuration list for PBXProject "iLemmings" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 88634E1DCBB91CAA67E86941;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 67862BC6D11FA132010BDB05 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4985D876342AB7596647182A /* iLemmings-iOS */,
+				CE64E8273C55ECFA9C0FDBFE /* iLemmings-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		58C7FE5419C79703897AEC6A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47A0291B2465D7FC6DAE8FB6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C38ACE60C7A24BACF46D43EA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57C244A5941CDD01C48AA48C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0FD96C7E6B1CF64CDD28EC2C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D24B2BDD7ADFF1633FE4107D /* GameEngine.swift in Sources */,
+				114B5D1BF8E8A2D431B3BD08 /* GameModels.swift in Sources */,
+				5554D278AAA7E96F6345CB7C /* GameScene.swift in Sources */,
+				EEF2F9CA3B3AC2ED3CEF14C8 /* GameView.swift in Sources */,
+				10E96D2999A5E17E27F9F165 /* LevelData.swift in Sources */,
+				A3FE55CE28569347DCEECBEC /* LevelsView.swift in Sources */,
+				94659A79E1CC72C72A14DEDC /* Localization.swift in Sources */,
+				3BC032F23A0CF0F9B341CAE7 /* MainMenuView.swift in Sources */,
+				52B71957538F159D9B7496B1 /* RootView.swift in Sources */,
+				88AE740CA4A589E1EDD561AB /* SettingsView.swift in Sources */,
+				74C27C6C8020AB1454DE9668 /* SplashView.swift in Sources */,
+				20E41CAFBB0CDCC5BDBB6650 /* Theme.swift in Sources */,
+				549827C2B0616BF9270CBAA8 /* iLemmingsApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		400F68E7B6C11F1ED6BF945D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				92F7E7219881025ACF10AE83 /* GameEngine.swift in Sources */,
+				AF4312EE0874FCAE8B9DCE7D /* GameModels.swift in Sources */,
+				4FEFC0D42257A626AD736EA5 /* GameScene.swift in Sources */,
+				22C84F8552F305EB0CA15E32 /* GameView.swift in Sources */,
+				61569B67ECDFD6B8A4FDFEDE /* LevelData.swift in Sources */,
+				C6597A37F1136301210E03D1 /* LevelsView.swift in Sources */,
+				E0F12AE42FFF0E4D2E3257A9 /* Localization.swift in Sources */,
+				0BB24CD0097432976CF04B16 /* MainMenuView.swift in Sources */,
+				8B0ABA13EF523C262D64BC20 /* RootView.swift in Sources */,
+				72B383A8FE1DBF8E9A1A285A /* SettingsView.swift in Sources */,
+				7E853A7585E4929E762DECD3 /* SplashView.swift in Sources */,
+				94EAF561112D3FEA02B49F50 /* Theme.swift in Sources */,
+				1BC900F38F20D87247EDFAB0 /* iLemmingsApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		06804C463444EAE08786C256 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Sources/Info-iOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.ividi.ilemmings;
+				PRODUCT_NAME = iLemmings;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7D5A0B0545ABA60F8B24FD18 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		81C81F4852C25150633517A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = "Sources/Info-macOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.ividi.ilemmings;
+				PRODUCT_NAME = iLemmings;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		936634054777B4B3175EE0A8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C3BD7638BE5F06D2416CFA81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = "Sources/Info-macOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.ividi.ilemmings;
+				PRODUCT_NAME = iLemmings;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		EB9FF36A0D1CADEF5941051F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Sources/Info-iOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.ividi.ilemmings;
+				PRODUCT_NAME = iLemmings;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		45DD9B266536E2FDD9C03E45 /* Build configuration list for PBXNativeTarget "iLemmings-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C3BD7638BE5F06D2416CFA81 /* Debug */,
+				81C81F4852C25150633517A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		51C0D68FFBCE7F35AC017264 /* Build configuration list for PBXProject "iLemmings" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D5A0B0545ABA60F8B24FD18 /* Debug */,
+				936634054777B4B3175EE0A8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		768EC16C7FAA70BA4E14B475 /* Build configuration list for PBXNativeTarget "iLemmings-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				06804C463444EAE08786C256 /* Debug */,
+				EB9FF36A0D1CADEF5941051F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 02A9EC79C1B37601408D1335 /* Project object */;
+}
