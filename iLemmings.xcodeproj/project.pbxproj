@@ -21,6 +21,7 @@
 		5554D278AAA7E96F6345CB7C /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A41C4B9449FCC3371D5B11 /* GameScene.swift */; };
 		57C244A5941CDD01C48AA48C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2D221E35BED815EC0C560C4D /* Assets.xcassets */; };
 		61569B67ECDFD6B8A4FDFEDE /* LevelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62DF52C845673D13BE6FFF44 /* LevelData.swift */; };
+		68771C580F0C4599CD1EEBD9 /* LemmingSprites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */; };
 		72B383A8FE1DBF8E9A1A285A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C6EEF247C0D16478DC95F9 /* SettingsView.swift */; };
 		74C27C6C8020AB1454DE9668 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B90F269DF86295BD3E9E7B /* SplashView.swift */; };
 		7E853A7585E4929E762DECD3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B90F269DF86295BD3E9E7B /* SplashView.swift */; };
@@ -30,6 +31,7 @@
 		94659A79E1CC72C72A14DEDC /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5940BA15B29555D96D180 /* Localization.swift */; };
 		94EAF561112D3FEA02B49F50 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C661FB392028D7C8129085A /* Theme.swift */; };
 		A3FE55CE28569347DCEECBEC /* LevelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */; };
+		A7A8C0BF13D08C360D99B1B2 /* LemmingSprites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */; };
 		AF4312EE0874FCAE8B9DCE7D /* GameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7277F96E7B7AFC6E877AE558 /* GameModels.swift */; };
 		C6597A37F1136301210E03D1 /* LevelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DD5A12513F65A9AF8CFDF6 /* LevelsView.swift */; };
 		D24B2BDD7ADFF1633FE4107D /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710B23ED1A842DE5FF073F41 /* GameEngine.swift */; };
@@ -45,6 +47,7 @@
 		540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iLemmings-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		62DF52C845673D13BE6FFF44 /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
 		67132860345F486CAE02F9E2 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
+		6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LemmingSprites.swift; sourceTree = "<group>"; };
 		710B23ED1A842DE5FF073F41 /* GameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEngine.swift; sourceTree = "<group>"; };
 		7277F96E7B7AFC6E877AE558 /* GameModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModels.swift; sourceTree = "<group>"; };
 		7C661FB392028D7C8129085A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -78,6 +81,7 @@
 			children = (
 				710B23ED1A842DE5FF073F41 /* GameEngine.swift */,
 				E9A41C4B9449FCC3371D5B11 /* GameScene.swift */,
+				6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -274,6 +278,7 @@
 				114B5D1BF8E8A2D431B3BD08 /* GameModels.swift in Sources */,
 				5554D278AAA7E96F6345CB7C /* GameScene.swift in Sources */,
 				EEF2F9CA3B3AC2ED3CEF14C8 /* GameView.swift in Sources */,
+				68771C580F0C4599CD1EEBD9 /* LemmingSprites.swift in Sources */,
 				10E96D2999A5E17E27F9F165 /* LevelData.swift in Sources */,
 				A3FE55CE28569347DCEECBEC /* LevelsView.swift in Sources */,
 				94659A79E1CC72C72A14DEDC /* Localization.swift in Sources */,
@@ -294,6 +299,7 @@
 				AF4312EE0874FCAE8B9DCE7D /* GameModels.swift in Sources */,
 				4FEFC0D42257A626AD736EA5 /* GameScene.swift in Sources */,
 				22C84F8552F305EB0CA15E32 /* GameView.swift in Sources */,
+				A7A8C0BF13D08C360D99B1B2 /* LemmingSprites.swift in Sources */,
 				61569B67ECDFD6B8A4FDFEDE /* LevelData.swift in Sources */,
 				C6597A37F1136301210E03D1 /* LevelsView.swift in Sources */,
 				E0F12AE42FFF0E4D2E3257A9 /* Localization.swift in Sources */,

@@ -30,12 +30,12 @@ enum LemSkill: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .climber: return "figure.climbing"
-        case .floater: return "parachute"
-        case .bomber: return "burst.fill"
+        case .floater: return "arrow.down.circle.fill"
+        case .bomber: return "timer"
         case .blocker: return "hand.raised.fill"
         case .builder: return "hammer.fill"
-        case .basher: return "figure.walk"
-        case .miner: return "pickaxe.fill"
+        case .basher: return "arrow.right.to.line"
+        case .miner: return "arrow.down.right"
         case .digger: return "arrow.down.to.line"
         }
     }

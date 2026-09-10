@@ -4,7 +4,7 @@ final class GameScene: SKScene {
     let engine: GameEngine
     private let tileSize: CGFloat = 16
     private var terrainNode = SKNode()
-    private var lemmingNodes: [Int: SKShapeNode] = [:]
+    private var lemmingNodes: [Int: SKSpriteNode] = [:]
     private var lastUpdateTime: TimeInterval = 0
     private var accumulator: TimeInterval = 0
     private var paused_ = false
@@ -81,12 +81,12 @@ final class GameScene: SKScene {
             lemmingNodes[lem.id] = node
             if node.parent == nil { addChild(node) }
 
-            let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize / 2)
+            let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y))
             node.run(.move(to: target, duration: 1.0 / engine.ticksPerSecond))
             node.isHidden = !lem.isAlive
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
-            colorLemming(node, for: lem)
+            updateAppearance(node, for: lem)
         }
         for (id, node) in lemmingNodes where !seen.contains(id) {
             node.removeFromParent()
@@ -94,24 +94,75 @@ final class GameScene: SKScene {
         }
     }
 
-    private func makeLemmingNode(for lem: Lemming) -> SKShapeNode {
-        let node = SKShapeNode(circleOfRadius: tileSize * 0.35)
-        node.strokeColor = .black
-        node.lineWidth = 1
+    private func makeLemmingNode(for lem: Lemming) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: LemmingSprites.stand)
+        node.size = CGSize(width: tileSize * 1.1, height: tileSize * 1.8)
+        node.anchorPoint = CGPoint(x: 0.5, y: 0)
         node.name = "lem-\(lem.id)"
         node.zPosition = 10
+
+        let badge = SKShapeNode(circleOfRadius: 3.5)
+        badge.name = "badge"
+        badge.strokeColor = .black
+        badge.lineWidth = 0.5
+        badge.position = CGPoint(x: 0, y: node.size.height + 5)
+        badge.isHidden = true
+        node.addChild(badge)
+
         return node
     }
 
-    private func colorLemming(_ node: SKShapeNode, for lem: Lemming) {
+    /// Picks the right pixel-art frame/animation and skill badge for the
+    /// lemming's current state, without recoloring the sprite itself — the
+    /// green hair / blue overalls silhouette must always read as a lemming.
+    private func updateAppearance(_ node: SKSpriteNode, for lem: Lemming) {
+        let badge = node.childNode(withName: "badge") as? SKShapeNode
+        badge?.isHidden = true
+
         switch lem.state {
-        case .blocking: node.fillColor = SKColor.systemRed
-        case .building: node.fillColor = SKColor.systemYellow
-        case .basher, .miner, .digger: node.fillColor = SKColor.systemBrown
-        case .exploding: node.fillColor = SKColor.systemPink
-        case .climbing: node.fillColor = SKColor.systemTeal
-        case .floating: node.fillColor = SKColor.systemCyan
-        default: node.fillColor = SKColor(red: 0.98, green: 0.45, blue: 0.09, alpha: 1)
+        case .walking:
+            if node.action(forKey: "walk") == nil {
+                node.run(.repeatForever(LemmingSprites.walkAnimation), withKey: "walk")
+            }
+            return
+
+        case .climbing:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.climb
+
+        case .blocking:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.block
+            badge?.isHidden = false
+            badge?.fillColor = .systemRed
+
+        case .building:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            badge?.isHidden = false
+            badge?.fillColor = .systemYellow
+
+        case .basher, .miner, .digger:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            badge?.isHidden = false
+            badge?.fillColor = .brown
+
+        case .exploding:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            badge?.isHidden = false
+            badge?.fillColor = .systemPink
+
+        case .floating:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            badge?.isHidden = false
+            badge?.fillColor = .cyan
+
+        case .falling, .saved, .dead:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
         }
     }
 
@@ -129,7 +180,8 @@ final class GameScene: SKScene {
     private func handleTap(at point: CGPoint) {
         let nodesHere = nodes(at: point)
         for n in nodesHere {
-            if let name = n.name, name.hasPrefix("lem-"), let id = Int(name.dropFirst(4)) {
+            let name = n.name ?? n.parent?.name
+            if let name, name.hasPrefix("lem-"), let id = Int(name.dropFirst(4)) {
                 onLemmingTapped?(id)
                 return
             }
