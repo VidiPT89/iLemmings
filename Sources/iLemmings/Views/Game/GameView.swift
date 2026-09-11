@@ -113,22 +113,6 @@ struct GameView: View {
     }
 }
 
-/// The classic Lemmings control panel: flat black, hard corners, a thin
-/// grey-blue frame — no rounding, no blur, no gradients. Matches the
-/// original's DOS/Amiga panel far more closely than the frosted iOS chrome
-/// used in the rest of this app.
-private struct RetroPanel: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .background(Color.black.opacity(0.9))
-            .overlay(Rectangle().strokeBorder(Color(red: 0.55, green: 0.6, blue: 0.65).opacity(0.6), lineWidth: 1))
-    }
-}
-
-private extension View {
-    func retroPanel() -> some View { modifier(RetroPanel()) }
-}
-
 /// The bright green "LCD"/dot-matrix look of the original counters
 /// (OUT / IN / TIME), instead of a brand-colored UI font.
 private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
