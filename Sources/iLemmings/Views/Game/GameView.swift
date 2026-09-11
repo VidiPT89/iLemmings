@@ -117,6 +117,26 @@ struct GameView: View {
     }
 }
 
+/// The classic Lemmings control panel: flat black, hard corners, a thin
+/// grey-blue frame — no rounding, no blur, no gradients. Matches the
+/// original's DOS/Amiga panel far more closely than the frosted iOS chrome
+/// used in the rest of this app.
+private struct RetroPanel: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(Color.black.opacity(0.9))
+            .overlay(Rectangle().strokeBorder(Color(red: 0.55, green: 0.6, blue: 0.65).opacity(0.6), lineWidth: 1))
+    }
+}
+
+private extension View {
+    func retroPanel() -> some View { modifier(RetroPanel()) }
+}
+
+/// The bright green "LCD"/dot-matrix look of the original counters
+/// (OUT / IN / TIME), instead of a brand-colored UI font.
+private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
+
 private struct HUDTopBar: View {
     @EnvironmentObject var loc: LocalizationManager
     @EnvironmentObject var sound: SoundManager
@@ -124,43 +144,55 @@ private struct HUDTopBar: View {
     @Binding var isPaused: Bool
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Button {
                 isPaused = true
             } label: {
-                Image(systemName: "pause.fill")
-                    .padding(10)
-                    .background(.thinMaterial, in: Circle())
+                Image(systemName: "pause.fill").frame(width: 20, height: 20)
             }
+            .padding(10)
+            .retroPanel()
 
-            statBadge(loc.string(.hudLemmingsOut), "\(engine.spawnedCount - engine.savedCount - engine.deadCount)")
-            statBadge(loc.string(.hudLemmingsSaved), "\(engine.savedCount)/\(engine.level.neededToSave)", animated: true)
-            statBadge(loc.string(.hudTimeLeft), timeString(engine.secondsRemaining))
+            HStack(spacing: 0) {
+                statCell(loc.string(.hudLemmingsOut), "\(engine.spawnedCount - engine.savedCount - engine.deadCount)")
+                divider
+                statCell(loc.string(.hudLemmingsSaved), "\(engine.savedCount)/\(engine.level.neededToSave)", animated: true)
+                divider
+                statCell(loc.string(.hudTimeLeft), timeString(engine.secondsRemaining))
+            }
+            .retroPanel()
 
             Spacer()
 
             Button {
                 sound.isMuted.toggle()
             } label: {
-                Image(systemName: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .padding(10)
-                    .background(.thinMaterial, in: Circle())
+                Image(systemName: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill").frame(width: 20, height: 20)
             }
+            .padding(10)
+            .retroPanel()
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(lcdGreen)
+        .buttonStyle(.plain)
     }
 
-    private func statBadge(_ title: String, _ value: String, animated: Bool = false) -> some View {
-        VStack(spacing: 2) {
-            Text(title).font(.caption2).opacity(0.8)
+    private var divider: some View {
+        // Explicit height matters: a bare Rectangle() has no intrinsic size,
+        // so without it the shape (and the whole HStack around it) stretches
+        // to fill all available vertical space instead of hugging the text.
+        Rectangle().fill(lcdGreen.opacity(0.25)).frame(width: 1, height: 36)
+    }
+
+    private func statCell(_ title: String, _ value: String, animated: Bool = false) -> some View {
+        VStack(spacing: 1) {
+            Text(title).font(.system(size: 9, weight: .medium, design: .monospaced)).opacity(0.7)
             Text(value)
-                .font(.headline.monospacedDigit())
+                .font(.system(.headline, design: .monospaced)).bold()
                 .contentTransition(animated ? .numericText() : .identity)
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: value)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color.brandGradient.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func timeString(_ seconds: Int) -> String {
@@ -173,15 +205,42 @@ private struct ZoomControls: View {
     let scene: GameScene
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Button { scene.zoom(byFactor: 1 / 1.25) } label: {
-                Image(systemName: "plus.magnifyingglass").padding(8).background(.thinMaterial, in: Circle())
+                Image(systemName: "plus.magnifyingglass").frame(width: 18, height: 18)
             }
+            .padding(8)
+            .retroPanel()
             Button { scene.zoom(byFactor: 1.25) } label: {
-                Image(systemName: "minus.magnifyingglass").padding(8).background(.thinMaterial, in: Circle())
+                Image(systemName: "minus.magnifyingglass").frame(width: 18, height: 18)
+            }
+            .padding(8)
+            .retroPanel()
+        }
+        .foregroundStyle(lcdGreen)
+        .buttonStyle(.plain)
+    }
+}
+
+/// A dithered/stippled yellow tile, like the original's skill button
+/// background — a flat gold fill reads as a modern app icon, not the game.
+private struct DitheredYellowBackground: View {
+    var body: some View {
+        Canvas { context, size in
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.62, green: 0.5, blue: 0.14)))
+            let dot = 3.0
+            var y = 0.0
+            var row = 0
+            while y < size.height {
+                var x = row.isMultiple(of: 2) ? 0.0 : dot
+                while x < size.width {
+                    context.fill(Path(CGRect(x: x, y: y, width: dot, height: dot)), with: .color(Color(red: 0.78, green: 0.66, blue: 0.2)))
+                    x += dot * 2
+                }
+                y += dot
+                row += 1
             }
         }
-        .foregroundStyle(.white)
     }
 }
 
@@ -190,30 +249,36 @@ private struct SkillTray: View {
     @EnvironmentObject var loc: LocalizationManager
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 2) {
             ForEach(LemSkill.allCases) { skill in
                 let count = engine.skillInventory[skill] ?? 0
+                let selected = engine.selectedSkill == skill
                 Button {
                     engine.selectSkill(skill)
                 } label: {
-                    VStack(spacing: 2) {
+                    ZStack(alignment: .topLeading) {
+                        DitheredYellowBackground()
                         Image(systemName: skill.symbol)
                             .font(.title3)
-                        Text("\(count)").font(.caption2.monospacedDigit())
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        Text("\(count)")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 3)
+                            .background(Color.black.opacity(0.75))
+                            .padding(2)
                     }
-                    .frame(width: 52, height: 52)
-                    .background(
-                        engine.selectedSkill == skill ? AnyShapeStyle(Color.brandGradient) : AnyShapeStyle(.thinMaterial),
-                        in: RoundedRectangle(cornerRadius: 12)
-                    )
-                    .foregroundStyle(engine.selectedSkill == skill ? .white : .primary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .overlay(Rectangle().strokeBorder(selected ? Color.red : Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: selected ? 3 : 1))
                 }
                 .disabled(count == 0)
                 .opacity(count == 0 ? 0.35 : 1)
             }
         }
-        .padding(10)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .buttonStyle(.plain)
+        .background(Color.black)
     }
 }
 

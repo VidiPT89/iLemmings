@@ -1,5 +1,18 @@
 import SpriteKit
 
+/// Deterministic RNG so the procedural terrain textures look the same on
+/// every launch instead of re-rolling their speckle pattern each time.
+struct SeededGenerator: RandomNumberGenerator {
+    private var state: UInt64
+    init(seed: Int) { state = UInt64(bitPattern: Int64(seed)) &+ 0x9E3779B97F4A7C15 }
+    mutating func next() -> UInt64 {
+        state ^= state << 13
+        state ^= state >> 7
+        state ^= state << 17
+        return state
+    }
+}
+
 final class GameScene: SKScene {
     let engine: GameEngine
     private let tileSize: CGFloat = 22
@@ -17,7 +30,7 @@ final class GameScene: SKScene {
     /// incrementally (see `updateTerrain()`) instead of rebuilding the whole
     /// grid every time a single tile changes — digging used to rebuild
     /// hundreds of `SKShapeNode`s on every tick, causing visible stutter.
-    private var terrainNodes: [Int: SKShapeNode] = [:]
+    private var terrainNodes: [Int: SKSpriteNode] = [:]
     private var lastGrid: [[Tile]] = []
     private var lemmingNodes: [Int: SKSpriteNode] = [:]
     private var lastUpdateTime: TimeInterval = 0
@@ -51,7 +64,7 @@ final class GameScene: SKScene {
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func didMove(to view: SKView) {
-        addChild(makeSky())
+        addChild(makeBackground())
         addChild(terrainNode)
         lastGrid = Array(repeating: Array(repeating: Tile.empty, count: engine.width), count: engine.height)
         updateTerrain()
@@ -98,57 +111,83 @@ final class GameScene: SKScene {
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
     }
 
-    // MARK: - Sky & terrain
+    // MARK: - Background & terrain
+    //
+    // The original DOS Lemmings renders each level against a flat, dark
+    // backdrop with grainy, dithered terrain sprites — not a cheerful blue
+    // sky and flat-color blocks. This tries to get closer to that: a solid
+    // dark background per level pack, and speckled/noisy tile textures
+    // instead of flat fills.
 
-    private func makeSky() -> SKSpriteNode {
-        let colors: [SKColor]
+    private func makeBackground() -> SKSpriteNode {
+        let color: SKColor
         switch engine.level.pack {
-        case .fun: colors = [SKColor(red: 0.42, green: 0.68, blue: 0.85, alpha: 1), SKColor(red: 0.72, green: 0.85, blue: 0.68, alpha: 1)]
-        case .tricky: colors = [SKColor(red: 0.55, green: 0.42, blue: 0.65, alpha: 1), SKColor(red: 0.85, green: 0.55, blue: 0.35, alpha: 1)]
-        case .taxing: colors = [SKColor(red: 0.30, green: 0.30, blue: 0.34, alpha: 1), SKColor(red: 0.55, green: 0.40, blue: 0.30, alpha: 1)]
-        case .mayhem: colors = [SKColor(red: 0.12, green: 0.05, blue: 0.05, alpha: 1), SKColor(red: 0.45, green: 0.12, blue: 0.08, alpha: 1)]
+        case .fun: color = SKColor(red: 0.05, green: 0.08, blue: 0.10, alpha: 1)
+        case .tricky: color = SKColor(red: 0.09, green: 0.06, blue: 0.10, alpha: 1)
+        case .taxing: color = SKColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 1)
+        case .mayhem: color = SKColor(red: 0.10, green: 0.03, blue: 0.03, alpha: 1)
         }
-        let texture = Self.gradientTexture(top: colors[0], bottom: colors[1])
-        let sky = SKSpriteNode(texture: texture)
-        sky.size = CGSize(width: worldWidth, height: worldHeight)
-        sky.position = CGPoint(x: worldWidth / 2, y: worldHeight / 2)
-        sky.zPosition = -10
-        return sky
-    }
-
-    private static func gradientTexture(top: SKColor, bottom: SKColor) -> SKTexture {
-        let width = 4, height = 256
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let ctx = CGContext(
-            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return SKTexture() }
-        let gradient = CGGradient(colorsSpace: colorSpace, colors: [top.cgColor, bottom.cgColor] as CFArray, locations: [0, 1])!
-        ctx.drawLinearGradient(gradient, start: CGPoint(x: 0, y: height), end: .zero, options: [])
-        guard let image = ctx.makeImage() else { return SKTexture() }
-        return SKTexture(cgImage: image)
+        let bg = SKSpriteNode(color: color, size: CGSize(width: worldWidth, height: worldHeight))
+        bg.position = CGPoint(x: worldWidth / 2, y: worldHeight / 2)
+        bg.zPosition = -10
+        return bg
     }
 
     private func flipRow(_ row: Int) -> CGFloat {
         CGFloat(engine.height - 1 - row) * tileSize
     }
 
+    private enum TerrainStyle: Hashable { case dirt, grassCap, steel, trap, exit, entrance }
+
     /// Dirt capped by open air gets a grassy highlight, like the classic
     /// hand-drawn hills — otherwise every level reads as flat brown blocks.
-    private func fillColor(for tile: Tile, row: Int, col: Int) -> SKColor? {
+    private func style(for tile: Tile, row: Int, col: Int) -> TerrainStyle? {
         switch tile {
         case .dirt:
             let isCapped = engine.tile(row - 1, col) != .dirt && engine.tile(row - 1, col) != .steel
-            return isCapped
-                ? SKColor(red: 0.36, green: 0.58, blue: 0.22, alpha: 1)
-                : SKColor(red: 0.62, green: 0.34, blue: 0.05, alpha: 1)
-        case .steel: return SKColor(red: 0.25, green: 0.22, blue: 0.20, alpha: 1)
-        case .trap: return SKColor(red: 0.75, green: 0.1, blue: 0.05, alpha: 1)
-        case .exit: return SKColor(red: 1.0, green: 0.85, blue: 0.05, alpha: 1)
-        case .entrance: return SKColor(red: 0.18, green: 0.14, blue: 0.10, alpha: 1)
+            return isCapped ? .grassCap : .dirt
+        case .steel: return .steel
+        case .trap: return .trap
+        case .exit: return .exit
+        case .entrance: return .entrance
         case .empty: return nil
         }
     }
+
+    /// A small speckled/dithered tile, generated once per style and reused —
+    /// gives the terrain a grainy, hand-pixelled feel instead of flat fills.
+    private static func speckleTexture(base: (CGFloat, CGFloat, CGFloat), variance: CGFloat, seed: Int) -> SKTexture {
+        let size = 16
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return SKTexture() }
+        var rng = SeededGenerator(seed: seed)
+        for y in 0..<size {
+            for x in 0..<size {
+                let n = CGFloat.random(in: -variance...variance, using: &rng)
+                let r = min(max(base.0 + n, 0), 1)
+                let g = min(max(base.1 + n, 0), 1)
+                let b = min(max(base.2 + n, 0), 1)
+                ctx.setFillColor(CGColor(red: r, green: g, blue: b, alpha: 1))
+                ctx.fill(CGRect(x: x, y: y, width: 1, height: 1))
+            }
+        }
+        guard let image = ctx.makeImage() else { return SKTexture() }
+        let texture = SKTexture(cgImage: image)
+        texture.filteringMode = .nearest
+        return texture
+    }
+
+    private static let terrainTextures: [TerrainStyle: SKTexture] = [
+        .dirt: speckleTexture(base: (0.42, 0.24, 0.06), variance: 0.05, seed: 1),
+        .grassCap: speckleTexture(base: (0.28, 0.46, 0.16), variance: 0.05, seed: 2),
+        .steel: speckleTexture(base: (0.30, 0.30, 0.32), variance: 0.04, seed: 3),
+        .trap: speckleTexture(base: (0.55, 0.07, 0.05), variance: 0.06, seed: 4),
+        .exit: speckleTexture(base: (0.70, 0.55, 0.10), variance: 0.05, seed: 5),
+        .entrance: speckleTexture(base: (0.12, 0.10, 0.09), variance: 0.03, seed: 6),
+    ]
 
     /// Only touches the cells that actually changed since last frame —
     /// digging/bashing/mining edit one or two tiles per tick, so rebuilding
@@ -171,19 +210,18 @@ final class GameScene: SKScene {
             let c = key % engine.width
             let tile = engine.tile(r, c)
 
-            guard let color = fillColor(for: tile, row: r, col: c) else {
+            guard let terrainStyle = style(for: tile, row: r, col: c),
+                  let texture = Self.terrainTextures[terrainStyle] else {
                 terrainNodes[key]?.removeFromParent()
                 terrainNodes.removeValue(forKey: key)
                 continue
             }
 
             if let existing = terrainNodes[key] {
-                existing.fillColor = color
+                existing.texture = texture
             } else {
-                let node = SKShapeNode(rectOf: CGSize(width: tileSize, height: tileSize))
+                let node = SKSpriteNode(texture: texture, size: CGSize(width: tileSize, height: tileSize))
                 node.position = CGPoint(x: CGFloat(c) * tileSize + tileSize / 2, y: flipRow(r) + tileSize / 2)
-                node.lineWidth = 0
-                node.fillColor = color
                 if tile == .exit {
                     node.run(.repeatForever(.sequence([
                         .scale(to: 1.15, duration: 0.5), .scale(to: 1.0, duration: 0.5),
