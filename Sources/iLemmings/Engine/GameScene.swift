@@ -46,6 +46,7 @@ final class GameScene: SKScene {
     private var didDrag = false
 
     var onLemmingTapped: ((Int) -> Void)?
+    var onExplosion: (() -> Void)?
 
     init(engine: GameEngine) {
         self.engine = engine
@@ -284,7 +285,10 @@ final class GameScene: SKScene {
         case .basher, .miner, .digger:
             if tickCounter % 4 == 0 { addParticles(kind: .dust, at: position) }
         case .dead:
-            if wasExploding { addParticles(kind: .explosion, at: position) }
+            if wasExploding {
+                addParticles(kind: .explosion, at: position)
+                onExplosion?()
+            }
         default:
             break
         }

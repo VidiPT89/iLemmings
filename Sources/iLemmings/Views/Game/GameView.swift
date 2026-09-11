@@ -87,6 +87,7 @@ struct GameView: View {
         }
         .onAppear {
             scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
+            scene.onExplosion = { sound.play(.explode) }
         }
         .sheet(isPresented: $showResult) {
             ResultView(
@@ -110,6 +111,7 @@ struct GameView: View {
         engine.reset()
         scene = GameScene(engine: engine)
         scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
+        scene.onExplosion = { sound.play(.explode) }
         isPaused = false
         showResult = false
         earnedStars = 0

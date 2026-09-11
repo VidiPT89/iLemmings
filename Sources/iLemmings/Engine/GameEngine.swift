@@ -140,13 +140,16 @@ final class GameEngine: ObservableObject {
         spawnedCount += 1
     }
 
+    /// Matches the original: the level keeps running (so more lemmings can
+    /// still be saved for a higher star rating) until either the clock runs
+    /// out or every spawned lemming has been resolved (saved or dead) —
+    /// reaching the minimum save count doesn't end the level early.
     private func evaluateEndConditions() {
-        guard savedCount < level.neededToSave else {
-            isWon = true
-            return
-        }
         let allLemmingsResolved = spawnedCount >= level.totalLemmings && lemmings.allSatisfy { !$0.isAlive }
-        if allLemmingsResolved || secondsRemaining <= 0 {
+        guard allLemmingsResolved || secondsRemaining <= 0 else { return }
+        if savedCount >= level.neededToSave {
+            isWon = true
+        } else {
             isLost = true
         }
     }
