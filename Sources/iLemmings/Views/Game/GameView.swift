@@ -39,15 +39,9 @@ struct GameView: View {
             .ignoresSafeArea()
 
             VStack {
-                HUDTopBar(engine: engine, isPaused: $isPaused)
                 Spacer()
-                HStack {
-                    Spacer()
-                    ZoomControls(scene: scene)
-                }
-                SkillTray(engine: engine)
+                BottomControlPanel(engine: engine, isPaused: $isPaused)
             }
-            .padding()
 
             if isPaused {
                 PauseOverlay(
@@ -139,91 +133,6 @@ private extension View {
 /// (OUT / IN / TIME), instead of a brand-colored UI font.
 private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
 
-private struct HUDTopBar: View {
-    @EnvironmentObject var loc: LocalizationManager
-    @EnvironmentObject var sound: SoundManager
-    @ObservedObject var engine: GameEngine
-    @Binding var isPaused: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Button {
-                isPaused = true
-            } label: {
-                Image(systemName: "pause.fill").frame(width: 20, height: 20)
-            }
-            .padding(10)
-            .retroPanel()
-
-            HStack(spacing: 0) {
-                statCell(loc.string(.hudLemmingsOut), "\(engine.spawnedCount - engine.savedCount - engine.deadCount)")
-                divider
-                statCell(loc.string(.hudLemmingsSaved), "\(engine.savedCount)/\(engine.level.neededToSave)", animated: true)
-                divider
-                statCell(loc.string(.hudTimeLeft), timeString(engine.secondsRemaining))
-            }
-            .retroPanel()
-
-            Spacer()
-
-            Button {
-                sound.isMuted.toggle()
-            } label: {
-                Image(systemName: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill").frame(width: 20, height: 20)
-            }
-            .padding(10)
-            .retroPanel()
-        }
-        .foregroundStyle(lcdGreen)
-        .buttonStyle(.plain)
-    }
-
-    private var divider: some View {
-        // Explicit height matters: a bare Rectangle() has no intrinsic size,
-        // so without it the shape (and the whole HStack around it) stretches
-        // to fill all available vertical space instead of hugging the text.
-        Rectangle().fill(lcdGreen.opacity(0.25)).frame(width: 1, height: 36)
-    }
-
-    private func statCell(_ title: String, _ value: String, animated: Bool = false) -> some View {
-        VStack(spacing: 1) {
-            Text(title).font(.system(size: 9, weight: .medium, design: .monospaced)).opacity(0.7)
-            Text(value)
-                .font(.system(.headline, design: .monospaced)).bold()
-                .contentTransition(animated ? .numericText() : .identity)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: value)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-    }
-
-    private func timeString(_ seconds: Int) -> String {
-        let s = max(0, seconds)
-        return String(format: "%d:%02d", s / 60, s % 60)
-    }
-}
-
-private struct ZoomControls: View {
-    let scene: GameScene
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Button { scene.zoom(byFactor: 1 / 1.25) } label: {
-                Image(systemName: "plus.magnifyingglass").frame(width: 18, height: 18)
-            }
-            .padding(8)
-            .retroPanel()
-            Button { scene.zoom(byFactor: 1.25) } label: {
-                Image(systemName: "minus.magnifyingglass").frame(width: 18, height: 18)
-            }
-            .padding(8)
-            .retroPanel()
-        }
-        .foregroundStyle(lcdGreen)
-        .buttonStyle(.plain)
-    }
-}
-
 /// A dithered/stippled yellow tile, like the original's skill button
 /// background — a flat gold fill reads as a modern app icon, not the game.
 private struct DitheredYellowBackground: View {
@@ -246,41 +155,118 @@ private struct DitheredYellowBackground: View {
     }
 }
 
-private struct SkillTray: View {
+/// The original's single control panel fixed at the bottom of the screen:
+/// a thin LCD info strip (released/out, saved/needed, time) above one row
+/// containing Pause, the 8 skill buttons, Nuke and Mute — not a floating
+/// top bar plus a separate bottom tray plus floating zoom buttons.
+private struct BottomControlPanel: View {
     @ObservedObject var engine: GameEngine
     @EnvironmentObject var loc: LocalizationManager
+    @EnvironmentObject var sound: SoundManager
+    @Binding var isPaused: Bool
+    @State private var showNukeConfirm = false
 
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(LemSkill.allCases) { skill in
-                let count = engine.skillInventory[skill] ?? 0
-                let selected = engine.selectedSkill == skill
-                Button {
-                    engine.selectSkill(skill)
-                } label: {
-                    ZStack(alignment: .topLeading) {
-                        DitheredYellowBackground()
-                        Image(systemName: skill.symbol)
-                            .font(.title3)
-                            .foregroundStyle(.black)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        Text("\(count)")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 3)
-                            .background(Color.black.opacity(0.75))
-                            .padding(2)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .overlay(Rectangle().strokeBorder(selected ? Color.red : Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: selected ? 3 : 1))
+        VStack(spacing: 0) {
+            statsBar
+            HStack(spacing: 2) {
+                ControlButton(systemImage: "pause.fill") { isPaused = true }
+                ForEach(LemSkill.allCases) { skill in
+                    SkillButton(skill: skill, engine: engine)
                 }
-                .disabled(count == 0)
-                .opacity(count == 0 ? 0.35 : 1)
+                ControlButton(systemImage: "flame.fill") { showNukeConfirm = true }
+                ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
+                    sound.isMuted.toggle()
+                }
             }
         }
-        .buttonStyle(.plain)
         .background(Color.black)
+        .overlay(Rectangle().strokeBorder(Color(red: 0.55, green: 0.6, blue: 0.65).opacity(0.6), lineWidth: 1))
+        .confirmationDialog(loc.string(.nukeConfirm), isPresented: $showNukeConfirm, titleVisibility: .visible) {
+            Button(loc.string(.nukeConfirmAction), role: .destructive) { engine.nukeAll() }
+        }
+    }
+
+    private var statsBar: some View {
+        HStack(spacing: 0) {
+            statCell(loc.string(.hudLemmingsOut), "\(engine.spawnedCount - engine.savedCount - engine.deadCount)")
+            divider
+            statCell(loc.string(.hudLemmingsSaved), "\(engine.savedCount)/\(engine.level.neededToSave)", animated: true)
+            divider
+            statCell(loc.string(.hudTimeLeft), timeString(engine.secondsRemaining))
+        }
+        .frame(maxWidth: .infinity)
+        .foregroundStyle(lcdGreen)
+        .overlay(Rectangle().fill(lcdGreen.opacity(0.25)).frame(height: 1), alignment: .bottom)
+    }
+
+    private var divider: some View {
+        Rectangle().fill(lcdGreen.opacity(0.25)).frame(width: 1, height: 28)
+    }
+
+    private func statCell(_ title: String, _ value: String, animated: Bool = false) -> some View {
+        VStack(spacing: 1) {
+            Text(title).font(.system(size: 9, weight: .medium, design: .monospaced)).opacity(0.7)
+            Text(value)
+                .font(.system(.subheadline, design: .monospaced)).bold()
+                .contentTransition(animated ? .numericText() : .identity)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: value)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 5)
+    }
+
+    private func timeString(_ seconds: Int) -> String {
+        let s = max(0, seconds)
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+private struct ControlButton: View {
+    let systemImage: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .foregroundStyle(lcdGreen)
+                .frame(width: 40, height: 50)
+        }
+        .buttonStyle(.plain)
+        .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
+    }
+}
+
+private struct SkillButton: View {
+    let skill: LemSkill
+    @ObservedObject var engine: GameEngine
+
+    var body: some View {
+        let count = engine.skillInventory[skill] ?? 0
+        let selected = engine.selectedSkill == skill
+        Button {
+            engine.selectSkill(skill)
+        } label: {
+            ZStack(alignment: .topLeading) {
+                DitheredYellowBackground()
+                Image(systemName: skill.symbol)
+                    .font(.title3)
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 3)
+                    .background(Color.black.opacity(0.75))
+                    .padding(2)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .overlay(Rectangle().strokeBorder(selected ? Color.red : Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: selected ? 3 : 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(count == 0)
+        .opacity(count == 0 ? 0.35 : 1)
     }
 }
 

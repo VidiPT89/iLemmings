@@ -103,7 +103,12 @@ final class GameScene: SKScene {
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
     }
 
-    // MARK: - Camera: pan & zoom
+    // MARK: - Camera: horizontal scroll only
+    //
+    // The original has a fixed-scale viewport and scrolls only horizontally
+    // (edge-scroll) — there is no pinch/zoom in DOS/Amiga Lemmings. Zoom
+    // here is set once per resize to fit the level's height and is not
+    // user-adjustable.
 
     private func clampedCameraX(_ x: CGFloat) -> CGFloat {
         let halfViewport = size.width * gameCamera.xScale / 2
@@ -113,12 +118,6 @@ final class GameScene: SKScene {
 
     func pan(bySceneDelta delta: CGFloat) {
         gameCamera.position.x = clampedCameraX(gameCamera.position.x + delta)
-    }
-
-    func zoom(byFactor factor: CGFloat) {
-        let newScale = min(max(gameCamera.xScale * factor, minZoom), maxZoom)
-        gameCamera.setScale(newScale)
-        gameCamera.position.x = clampedCameraX(gameCamera.position.x)
     }
 
     // MARK: - Background & terrain
