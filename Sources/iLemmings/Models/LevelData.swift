@@ -37,20 +37,37 @@ enum LevelLibrary {
         )
     }()
 
-    /// A vertical shaft level: teaches Digger + Basher + Climber.
+    /// A wall-then-shaft level: teaches Basher (breach the 2-tile-tall wall —
+    /// Climber or Bomber also work) then Digger (breach the floor to reach
+    /// the exit chamber below, or just walk off its far edge). Terrain is
+    /// shared and permanent, so the diggable block is only 2 tiles thick —
+    /// thick enough that Digger visibly saves the walk around, but thin
+    /// enough that even a lemming that falls straight through a tunnel a
+    /// previous lemming dug (no safe mid-air ledge to catch it) still only
+    /// falls 6 tiles total, exactly at the safe limit. A thicker block
+    /// looked fine solo but turned any already-dug column into a death trap
+    /// for every lemming that followed over it — verified with a headless
+    /// simulation, not just by inspection.
     static let level2: LevelDefinition = {
-        let width = 32
+        let width = 28
         let air = row(width, [(".", width)])
-        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let ledge1 = row(width, [("#", width - 6), (".", 6)])
-        let wall = row(width, [(".", width - 10), ("#", 10)])
-        let ledge2 = row(width, [(".", 6), ("#", width - 6 - 1), ("X", 1)])
-        let deepWall = row(width, [(".", width - 10), ("#", 10)])
-        let floor = row(width, [("S", width)])
+        // Entrance plus the upper half of the basher wall (cols 6-10) —
+        // together with row2's lower half, a 2-tile-tall wall too tall for
+        // the automatic single-ledge hop, so it genuinely requires a skill.
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", 3), ("#", 5), (".", 17)])
+        let wallLowerAndWalk = row(width, [(".", 6), ("#", 5), (".", 17)])
+        let platformFloor = row(width, [("#", 12), (".", 16)])
+        // Top/bottom of the diggable block the platform drops onto.
+        let diggableLayer = row(width, [(".", 12), ("#", 12), (".", 4)])
+        // Open chamber below the diggable block — fully empty so a lemming
+        // lands here whether it was dug through or fell past the block's
+        // right edge.
+        let chamber = row(width, [(".", width)])
+        let chamberFloor = row(width, [("S", 20), ("X", 1), ("S", 7)])
 
-        var rows: [String] = [air, entranceRow, air, ledge1, wall, wall, ledge2]
-        rows.append(contentsOf: Array(repeating: deepWall, count: 8))
-        rows.append(floor)
+        var rows: [String] = [air, entranceRow, wallLowerAndWalk, platformFloor, air, air]
+        rows.append(contentsOf: Array(repeating: diggableLayer, count: 2))
+        rows.append(contentsOf: [chamber, chamberFloor])
 
         return LevelDefinition(
             id: "level2",
