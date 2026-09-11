@@ -9,7 +9,7 @@
 
 - ✅ Classic Lemmings gameplay: walking, falling, digging and building lemmings on destructible terrain
 - ✅ Eight assignable skills — Climber, Floater, Bomber, Blocker, Builder, Basher, Miner and Digger
-- ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with a walking animation, climbing and blocking poses
+- ✅ Hand-drawn pixel-art lemmings (blond hair, blue overalls) with a walking animation, climbing and blocking poses
 - ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it
 - ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber, confetti on victory
 - ✅ Four level packs (Fun, Tricky, Taxing, Mayhem) with a 1-3 star rating per level based on lemmings saved and time left
@@ -55,10 +55,11 @@ Pick the `iLemmings-iOS` or `iLemmings-macOS` scheme and run (`⌘R`).
 
 1. Watch the splash screen, then choose **Play** or **Levels** from the main menu
 2. Pick an unlocked level from one of the four packs — lemmings spawn from the entrance and start walking
-3. Tap a skill in the tray at the bottom, then tap a lemming to assign it
+3. Tap a skill in the control panel at the bottom, then tap a lemming to assign it
 4. Use **Builder** to bridge gaps, **Digger**/**Basher**/**Miner** to tunnel through terrain, **Blocker** to redirect the crowd, **Climber**/**Floater** to survive walls and long falls, and **Bomber** to blast an obstacle clear
-5. Save enough lemmings through the exit before time runs out to earn stars and unlock the next level
-6. Switch language, appearance and sound any time from **Settings**
+5. Stuck? **Nuke** arms every lemming's Bomber countdown at once, for ending an unwinnable attempt early
+6. Save enough lemmings through the exit before time runs out to earn stars and unlock the next level
+7. Switch language, appearance and sound any time from **Settings**
 
 ## 🧪 Testing
 

@@ -24,6 +24,13 @@ final class GameScene: SKScene {
     private let visibleTilesWide: CGFloat = 15
     private let minZoom: CGFloat = 0.25
     private let maxZoom: CGFloat = 3.0
+    /// Fitting the level height exactly makes on-screen tile size just
+    /// `screenHeight / level.height`, with zero margin — on a tall window
+    /// this made every tile (and the lemming sprites, sized relative to it)
+    /// render huge, since nothing else scales it down. This extra 35%
+    /// zoomed-out padding shows some sky/margin above and below instead of
+    /// filling edge-to-edge, shrinking tiles and lemmings by the same ratio.
+    private let heightFitPadding: CGFloat = 1.35
 
     private var terrainNode = SKNode()
     /// One optional node per cell, keyed by `row * width + col`. Updated
@@ -50,7 +57,7 @@ final class GameScene: SKScene {
 
     init(engine: GameEngine) {
         self.engine = engine
-        let viewportWidth = min(CGFloat(engine.width), 15) * tileSize
+        let viewportWidth = min(CGFloat(engine.width), visibleTilesWide) * tileSize
         let viewportHeight = CGFloat(engine.height) * tileSize
         super.init(size: CGSize(width: viewportWidth, height: viewportHeight))
         // .resizeFill maps 1 scene point to 1 view point exactly, so lemmings
@@ -86,14 +93,6 @@ final class GameScene: SKScene {
     /// empty background. Zoom is set so the full level height always fills
     /// the view, matching the classic Lemmings full-height, side-scrolling
     /// camera; horizontal panning reveals the rest of the (wider) level.
-    /// Fitting the level height exactly makes on-screen tile size just
-    /// `screenHeight / level.height`, with zero margin — on a tall window
-    /// this made every tile (and the lemming sprites, sized relative to it)
-    /// render huge, since nothing else scales it down. This extra 35%
-    /// zoomed-out padding shows some sky/margin above and below instead of
-    /// filling edge-to-edge, shrinking tiles and lemmings by the same ratio.
-    private let heightFitPadding: CGFloat = 1.35
-
     func resizeViewport(to newSize: CGSize) {
         guard newSize.width > 0, newSize.height > 0 else { return }
         size = newSize
@@ -419,7 +418,7 @@ final class GameScene: SKScene {
 
     /// Picks the right pixel-art frame/animation and skill badge for the
     /// lemming's current state, without recoloring the sprite itself — the
-    /// green hair / blue overalls silhouette must always read as a lemming.
+    /// blond hair / blue overalls silhouette must always read as a lemming.
     private func updateAppearance(_ node: SKSpriteNode, for lem: Lemming) {
         let badge = node.childNode(withName: "badge") as? SKShapeNode
         badge?.isHidden = true
