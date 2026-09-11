@@ -65,6 +65,12 @@ struct Lemming: Identifiable {
     var fallDistance: Int = 0
     var hasClimber: Bool = false
     var hasFloater: Bool = false
+    /// Ticks accumulated since the last walking step — walking only advances
+    /// one column every `GameEngine.walkTicksPerStep` ticks instead of one
+    /// full tile per tick (20 tiles/sec), which made lemmings cross an
+    /// entire level and die in well under a second, before a player could
+    /// even react.
+    var walkProgress: Int = 0
     var isAlive: Bool { state != .dead && state != .saved }
 }
 

@@ -19,6 +19,10 @@ final class GameEngine: ObservableObject {
     private var nextID = 0
     private let entrance: (row: Int, col: Int)
     private let maxSafeFall = 6
+    /// One walking step (one column) every 4 ticks — 5 tiles/sec at 20
+    /// ticks/sec, instead of the previous 1 tile/tick (20 tiles/sec) which
+    /// let a lemming cross an entire level and die before it was visible.
+    private let walkTicksPerStep = 4
 
     var ticksPerSecond: Double { 20 }
 
@@ -58,6 +62,7 @@ final class GameEngine: ObservableObject {
     var width: Int { level.width }
     var height: Int { level.height }
     var entranceColumn: Int { entrance.col }
+    var entranceRow: Int { entrance.row }
 
     func tile(_ row: Int, _ col: Int) -> Tile {
         guard row >= 0, row < height, col >= 0, col < width else { return .steel }
@@ -200,7 +205,11 @@ final class GameEngine: ObservableObject {
             }
 
         case .walking:
-            walk(&lem)
+            lem.walkProgress += 1
+            if lem.walkProgress >= walkTicksPerStep {
+                lem.walkProgress = 0
+                walk(&lem)
+            }
 
         case .blocking:
             break // stands still forever, acts as an obstacle in walk()
