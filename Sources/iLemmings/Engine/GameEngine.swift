@@ -57,6 +57,7 @@ final class GameEngine: ObservableObject {
 
     var width: Int { level.width }
     var height: Int { level.height }
+    var entranceColumn: Int { entrance.col }
 
     func tile(_ row: Int, _ col: Int) -> Tile {
         guard row >= 0, row < height, col >= 0, col < width else { return .steel }

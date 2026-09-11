@@ -30,13 +30,21 @@ struct GameView: View {
         ZStack {
             Color.brandBlack.ignoresSafeArea()
 
-            SpriteView(scene: scene)
-                .ignoresSafeArea()
-                .onTapGesture {} // ensures SpriteKit receives touches on iOS
+            GeometryReader { proxy in
+                SpriteView(scene: scene)
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .onAppear { scene.resizeViewport(to: proxy.size) }
+                    .onChange(of: proxy.size) { _, newSize in scene.resizeViewport(to: newSize) }
+            }
+            .ignoresSafeArea()
 
             VStack {
                 HUDTopBar(engine: engine, isPaused: $isPaused)
                 Spacer()
+                HStack {
+                    Spacer()
+                    ZoomControls(scene: scene)
+                }
                 SkillTray(engine: engine)
             }
             .padding()
@@ -158,6 +166,22 @@ private struct HUDTopBar: View {
     private func timeString(_ seconds: Int) -> String {
         let s = max(0, seconds)
         return String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+private struct ZoomControls: View {
+    let scene: GameScene
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Button { scene.zoom(byFactor: 1 / 1.25) } label: {
+                Image(systemName: "plus.magnifyingglass").padding(8).background(.thinMaterial, in: Circle())
+            }
+            Button { scene.zoom(byFactor: 1.25) } label: {
+                Image(systemName: "minus.magnifyingglass").padding(8).background(.thinMaterial, in: Circle())
+            }
+        }
+        .foregroundStyle(.white)
     }
 }
 
