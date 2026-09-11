@@ -29,8 +29,6 @@ enum LocKey: String {
     case menuPlay
     case menuLevels
     case menuSettings
-    case menuContinue
-    case menuQuit
     case settingsTitle
     case settingsLanguage
     case settingsTheme
@@ -40,12 +38,10 @@ enum LocKey: String {
     case settingsSound
     case settingsClose
     case levelsTitle
-    case levelLocked
     case hudLemmingsOut
     case hudLemmingsSaved
     case hudLemmingsNeeded
     case hudTimeLeft
-    case hudPause
     case skillClimber
     case skillFloater
     case skillBomber
@@ -92,11 +88,5 @@ final class LocalizationManager: ObservableObject {
 
     func string(_ key: LocKey) -> String {
         bundle.localizedString(forKey: key.rawValue, value: key.rawValue, table: "Localizable")
-    }
-}
-
-extension View {
-    func loc(_ key: LocKey, using manager: LocalizationManager) -> String {
-        manager.string(key)
     }
 }

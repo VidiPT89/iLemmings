@@ -104,7 +104,7 @@ final class GameEngine: ObservableObject {
             guard lem.state == .walking else { return }
             lem.state = .digger(stepsLeft: 8)
         case .bomber:
-            guard lem.isAlive, lem.state != .exploding(ticksLeft: 0) else { return }
+            if case .exploding = lem.state { return } // already counting down, don't reset the timer
             lem.state = .exploding(ticksLeft: Int(ticksPerSecond * 3))
         }
 
@@ -140,18 +140,13 @@ final class GameEngine: ObservableObject {
     }
 
     private func evaluateEndConditions() {
-        if savedCount >= level.neededToSave {
+        guard savedCount < level.neededToSave else {
             isWon = true
             return
         }
-        let allResolved = spawnedCount >= level.totalLemmings &&
-            lemmings.allSatisfy { !$0.isAlive }
-        if allResolved && savedCount < level.neededToSave {
+        let allLemmingsResolved = spawnedCount >= level.totalLemmings && lemmings.allSatisfy { !$0.isAlive }
+        if allLemmingsResolved || secondsRemaining <= 0 {
             isLost = true
-        }
-        if secondsRemaining <= 0 {
-            isLost = savedCount < level.neededToSave
-            isWon = savedCount >= level.neededToSave
         }
     }
 
@@ -286,8 +281,8 @@ final class GameEngine: ObservableObject {
         let dir = lem.facingRight ? 1 : -1
         let frontCol = col + dir
 
-        if let blockerIdx = lemmings.firstIndex(where: { $0.y == lem.y && Int($0.x.rounded()) == frontCol && $0.state == .blocking }) {
-            _ = blockerIdx
+        let blockedByLemming = lemmings.contains { $0.y == lem.y && Int($0.x.rounded()) == frontCol && $0.state == .blocking }
+        if blockedByLemming {
             lem.facingRight.toggle()
             return
         }

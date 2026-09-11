@@ -22,7 +22,7 @@ struct DecorativeWalkersView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                ForEach(Array(walkers.enumerated()), id: \.offset) { _, walker in
+                ForEach(walkers) { walker in
                     walkerImage
                         .frame(width: 24 * walker.scale, height: 24 * walker.scale)
                         .position(

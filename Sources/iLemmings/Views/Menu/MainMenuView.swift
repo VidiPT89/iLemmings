@@ -3,9 +3,16 @@ import SwiftUI
 struct MainMenuView: View {
     @EnvironmentObject var loc: LocalizationManager
     @Environment(\.colorScheme) private var scheme
+    @AppStorage("unlockedLevelIndex") private var unlockedIndex = 0
     @State private var showLevels = false
+    @State private var showPlay = false
     @State private var showSettings = false
     @State private var floatOffset: CGFloat = 0
+
+    /// "Play" jumps straight into the next level the player hasn't beaten yet.
+    private var nextLevelIndex: Int {
+        min(unlockedIndex, LevelLibrary.all.count - 1)
+    }
 
     var body: some View {
         NavigationStack {
@@ -32,7 +39,7 @@ struct MainMenuView: View {
                     Spacer()
 
                     VStack(spacing: 14) {
-                        MenuButton(title: loc.string(.menuPlay), icon: "play.fill") { showLevels = true }
+                        MenuButton(title: loc.string(.menuPlay), icon: "play.fill") { showPlay = true }
                         MenuButton(title: loc.string(.menuLevels), icon: "list.bullet") { showLevels = true }
                         MenuButton(title: loc.string(.menuSettings), icon: "gearshape.fill") { showSettings = true }
                     }
@@ -46,6 +53,9 @@ struct MainMenuView: View {
                 }
             }
             .navigationDestination(isPresented: $showLevels) { LevelsView() }
+            .navigationDestination(isPresented: $showPlay) {
+                GameView(level: LevelLibrary.all[nextLevelIndex], levelIndex: nextLevelIndex)
+            }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .onAppear {
                 withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {

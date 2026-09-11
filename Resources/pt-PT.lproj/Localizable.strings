@@ -4,8 +4,6 @@
 "menuPlay" = "Jogar";
 "menuLevels" = "Níveis";
 "menuSettings" = "Definições";
-"menuContinue" = "Continuar";
-"menuQuit" = "Sair";
 "settingsTitle" = "Definições";
 "settingsLanguage" = "Idioma";
 "settingsTheme" = "Aparência";
@@ -15,12 +13,10 @@
 "settingsSound" = "Som";
 "settingsClose" = "Concluído";
 "levelsTitle" = "Níveis";
-"levelLocked" = "Bloqueado";
 "hudLemmingsOut" = "No terreno";
 "hudLemmingsSaved" = "Salvos";
 "hudLemmingsNeeded" = "Necessários";
 "hudTimeLeft" = "Tempo";
-"hudPause" = "Pausa";
 "skillClimber" = "Escalador";
 "skillFloater" = "Paraquedas";
 "skillBomber" = "Explosivo";

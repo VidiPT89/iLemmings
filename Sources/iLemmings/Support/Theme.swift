@@ -25,7 +25,7 @@ enum AppColorScheme: String, CaseIterable, Identifiable {
 }
 
 final class ThemeManager: ObservableObject {
-    @AppStorage("appColorScheme") var storedScheme: String = AppColorScheme.system.rawValue
+    @AppStorage("appColorScheme") private var storedScheme: String = AppColorScheme.system.rawValue
 
     var scheme: AppColorScheme {
         get { AppColorScheme(rawValue: storedScheme) ?? .system }

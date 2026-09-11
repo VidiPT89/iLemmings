@@ -4,6 +4,12 @@ final class GameScene: SKScene {
     let engine: GameEngine
     private let tileSize: CGFloat = 16
     private var terrainNode = SKNode()
+    /// One optional node per cell, keyed by `row * width + col`. Updated
+    /// incrementally (see `updateTerrain()`) instead of rebuilding the whole
+    /// grid every time a single tile changes — digging used to rebuild
+    /// hundreds of `SKShapeNode`s on every tick, causing visible stutter.
+    private var terrainNodes: [Int: SKShapeNode] = [:]
+    private var lastGrid: [[Tile]] = []
     private var lemmingNodes: [Int: SKSpriteNode] = [:]
     private var lastUpdateTime: TimeInterval = 0
     private var accumulator: TimeInterval = 0
@@ -26,7 +32,8 @@ final class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         addChild(terrainNode)
-        redrawTerrain()
+        lastGrid = Array(repeating: Array(repeating: Tile.empty, count: engine.width), count: engine.height)
+        updateTerrain()
     }
 
     func setEnginePaused(_ paused: Bool) { paused_ = paused }
@@ -35,26 +42,47 @@ final class GameScene: SKScene {
         CGFloat(engine.height - 1 - row) * tileSize
     }
 
-    private func redrawTerrain() {
-        terrainNode.removeAllChildren()
+    private func fillColor(for tile: Tile) -> SKColor? {
+        switch tile {
+        case .dirt: return SKColor(red: 0.62, green: 0.34, blue: 0.05, alpha: 1)
+        case .steel: return SKColor(red: 0.25, green: 0.22, blue: 0.20, alpha: 1)
+        case .trap: return SKColor(red: 0.75, green: 0.1, blue: 0.05, alpha: 1)
+        case .exit: return SKColor(red: 0.85, green: 0.58, blue: 0.09, alpha: 1)
+        case .entrance: return SKColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 0.6)
+        case .empty: return nil
+        }
+    }
+
+    /// Only touches the cells that actually changed since last frame —
+    /// digging/bashing/mining edit one or two tiles per tick, so rebuilding
+    /// the entire grid's shape nodes every time was wasted work that caused
+    /// visible stutter on every dig.
+    private func updateTerrain() {
         for r in 0..<engine.height {
             for c in 0..<engine.width {
-                let t = engine.tile(r, c)
-                guard t != .empty else { continue }
-                let node = SKShapeNode(rectOf: CGSize(width: tileSize, height: tileSize))
-                node.position = CGPoint(x: CGFloat(c) * tileSize + tileSize / 2, y: flipRow(r) + tileSize / 2)
-                node.lineWidth = 0
-                switch t {
-                case .dirt: node.fillColor = SKColor(red: 0.62, green: 0.34, blue: 0.05, alpha: 1)
-                case .steel: node.fillColor = SKColor(red: 0.25, green: 0.22, blue: 0.20, alpha: 1)
-                case .trap: node.fillColor = SKColor(red: 0.75, green: 0.1, blue: 0.05, alpha: 1)
-                case .exit: node.fillColor = SKColor(red: 0.85, green: 0.58, blue: 0.09, alpha: 1)
-                case .entrance: node.fillColor = SKColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 0.6)
-                case .empty: break
+                let tile = engine.tile(r, c)
+                guard tile != lastGrid[r][c] else { continue }
+                let key = r * engine.width + c
+
+                guard let color = fillColor(for: tile) else {
+                    terrainNodes[key]?.removeFromParent()
+                    terrainNodes.removeValue(forKey: key)
+                    continue
                 }
-                terrainNode.addChild(node)
+
+                if let existing = terrainNodes[key] {
+                    existing.fillColor = color
+                } else {
+                    let node = SKShapeNode(rectOf: CGSize(width: tileSize, height: tileSize))
+                    node.position = CGPoint(x: CGFloat(c) * tileSize + tileSize / 2, y: flipRow(r) + tileSize / 2)
+                    node.lineWidth = 0
+                    node.fillColor = color
+                    terrainNode.addChild(node)
+                    terrainNodes[key] = node
+                }
             }
         }
+        lastGrid = engine.grid
     }
 
     override func update(_ currentTime: TimeInterval) {
@@ -64,15 +92,14 @@ final class GameScene: SKScene {
         guard !paused_ else { return }
         accumulator += dt
         let step = 1.0 / engine.ticksPerSecond
-        var terrainChanged = false
+        var ticked = false
         while accumulator >= step {
-            let before = engine.grid
             engine.tick()
             tickCounter += 1
-            if engine.grid != before { terrainChanged = true }
+            ticked = true
             accumulator -= step
         }
-        if terrainChanged { redrawTerrain() }
+        if ticked { updateTerrain() }
         syncLemmingNodes()
     }
 

@@ -48,10 +48,6 @@ struct GameView: View {
                     onMenu: { dismiss() }
                 )
             }
-
-            if showResult && engine.isWon {
-                ConfettiView()
-            }
         }
         .onChange(of: isPaused) { _, newValue in scene.setEnginePaused(newValue) }
         .onChange(of: engine.skillInventory) { _, newValue in
@@ -225,34 +221,40 @@ private struct ResultView: View {
     let onRetry: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: won ? "checkmark.seal.fill" : "xmark.seal.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(won ? Color.green : Color.red)
-                .transition(.scale.combined(with: .opacity))
-            Text(loc.string(won ? .levelWinTitle : .levelLoseTitle)).font(.title.bold())
+        ZStack {
             if won {
-                HStack(spacing: 6) {
-                    ForEach(0..<3, id: \.self) { i in
-                        Image(systemName: i < stars ? "star.fill" : "star")
-                            .font(.title2)
-                            .foregroundStyle(i < stars ? Color.brandAmber : .secondary.opacity(0.3))
-                            .scaleEffect(i < stars ? 1 : 0.85)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.6).delay(Double(i) * 0.12), value: stars)
+                ConfettiView()
+            }
+
+            VStack(spacing: 20) {
+                Image(systemName: won ? "checkmark.seal.fill" : "xmark.seal.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(won ? Color.green : Color.red)
+                    .transition(.scale.combined(with: .opacity))
+                Text(loc.string(won ? .levelWinTitle : .levelLoseTitle)).font(.title.bold())
+                if won {
+                    HStack(spacing: 6) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Image(systemName: i < stars ? "star.fill" : "star")
+                                .font(.title2)
+                                .foregroundStyle(i < stars ? Color.brandAmber : .secondary.opacity(0.3))
+                                .scaleEffect(i < stars ? 1 : 0.85)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.6).delay(Double(i) * 0.12), value: stars)
+                        }
                     }
                 }
-            }
-            Text(loc.string(won ? .levelWinBody : .levelLoseBody))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                Text(loc.string(won ? .levelWinBody : .levelLoseBody))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
 
-            Button(won ? loc.string(.nextLevel) : loc.string(.retryLevel), action: won ? onNext : onRetry)
-                .buttonStyle(BrandButtonStyle())
-            Button(loc.string(.backToLevels), action: onNext)
-                .buttonStyle(.plain)
-                .padding(.top, 4)
+                Button(won ? loc.string(.nextLevel) : loc.string(.retryLevel), action: won ? onNext : onRetry)
+                    .buttonStyle(BrandButtonStyle())
+                Button(loc.string(.backToLevels), action: onNext)
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+            }
+            .padding(32)
         }
-        .padding(32)
     }
 }
 

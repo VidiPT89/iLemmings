@@ -4,8 +4,6 @@
 "menuPlay" = "Play";
 "menuLevels" = "Levels";
 "menuSettings" = "Settings";
-"menuContinue" = "Continue";
-"menuQuit" = "Quit";
 "settingsTitle" = "Settings";
 "settingsLanguage" = "Language";
 "settingsTheme" = "Appearance";
@@ -15,12 +13,10 @@
 "settingsSound" = "Sound";
 "settingsClose" = "Done";
 "levelsTitle" = "Levels";
-"levelLocked" = "Locked";
 "hudLemmingsOut" = "Out";
 "hudLemmingsSaved" = "Saved";
 "hudLemmingsNeeded" = "Needed";
 "hudTimeLeft" = "Time";
-"hudPause" = "Pause";
 "skillClimber" = "Climber";
 "skillFloater" = "Floater";
 "skillBomber" = "Bomber";
