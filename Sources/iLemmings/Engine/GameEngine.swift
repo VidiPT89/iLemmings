@@ -207,6 +207,9 @@ final class GameEngine: ObservableObject {
             let frontCol = col + dir
             if steps <= 0 {
                 lem.state = .walking
+            } else if isSolid(tile(lem.y - 1, frontCol)) {
+                // Blocked by a wall/steel ahead — the original stops the builder here.
+                lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .dirt)
                 lem.x += Double(dir) * 0.5
@@ -217,7 +220,10 @@ final class GameEngine: ObservableObject {
         case .basher(let steps):
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
-            if steps <= 0 || !isSolid(tile(lem.y, frontCol)) {
+            let noFloorAhead = !isSolid(tile(lem.y + 1, frontCol))
+            if steps <= 0 || tile(lem.y, frontCol) == .steel || noFloorAhead {
+                lem.state = .walking
+            } else if !isSolid(tile(lem.y, frontCol)) {
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .empty)
@@ -228,7 +234,7 @@ final class GameEngine: ObservableObject {
         case .miner(let steps):
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
-            if steps <= 0 {
+            if steps <= 0 || tile(lem.y, frontCol) == .steel || tile(lem.y + 1, frontCol) == .steel {
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .empty)
@@ -239,7 +245,7 @@ final class GameEngine: ObservableObject {
             }
 
         case .digger(let steps):
-            if steps <= 0 {
+            if steps <= 0 || tile(lem.y + 1, col) == .steel {
                 lem.state = .falling
             } else {
                 setTile(lem.y + 1, col, .empty)
