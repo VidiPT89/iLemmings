@@ -205,9 +205,9 @@ final class GameEngine: ObservableObject {
             }
 
         case .walking:
-            lem.walkProgress += 1
-            if lem.walkProgress >= walkTicksPerStep {
-                lem.walkProgress = 0
+            lem.actionProgress += 1
+            if lem.actionProgress >= walkTicksPerStep {
+                lem.actionProgress = 0
                 walk(&lem)
             }
 
@@ -219,17 +219,27 @@ final class GameEngine: ObservableObject {
             let frontCol = col + dir
             if steps <= 0 {
                 lem.state = .walking
-            } else if isSolid(tile(lem.y - 1, frontCol)) {
-                // Blocked by a wall/steel ahead — the original stops the builder here.
+            } else if lem.y - 1 >= 0 && isSolid(tile(lem.y - 1, frontCol)) {
+                // Blocked by a real wall/steel ahead — the original stops the builder
+                // here. `lem.y - 1 >= 0` matters because `tile()` returns `.steel` for
+                // any out-of-bounds row (including above the map), so a tall bridge
+                // climbing toward row 0 would otherwise read the open sky above the
+                // level as a wall and stop dead, stranding the lemming mid-air.
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .dirt)
                 lem.x += Double(dir) * 0.5
                 lem.state = .building(stepsLeft: steps - 1)
-                if steps % 2 == 0 { lem.y -= 1 }
+                // Never climb above row 0 — a staircase that reached the top of
+                // the map used to keep decrementing y past it, leaving the
+                // lemming permanently stuck at an invalid negative row.
+                if steps % 2 == 0 && lem.y > 0 { lem.y -= 1 }
             }
 
         case .basher(let steps):
+            lem.actionProgress += 1
+            guard lem.actionProgress >= walkTicksPerStep else { break }
+            lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
             let noFloorAhead = !isSolid(tile(lem.y + 1, frontCol))
@@ -244,6 +254,9 @@ final class GameEngine: ObservableObject {
             }
 
         case .miner(let steps):
+            lem.actionProgress += 1
+            guard lem.actionProgress >= walkTicksPerStep else { break }
+            lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
             if steps <= 0 || tile(lem.y, frontCol) == .steel || tile(lem.y + 1, frontCol) == .steel {

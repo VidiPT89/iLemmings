@@ -86,10 +86,18 @@ final class GameScene: SKScene {
     /// empty background. Zoom is set so the full level height always fills
     /// the view, matching the classic Lemmings full-height, side-scrolling
     /// camera; horizontal panning reveals the rest of the (wider) level.
+    /// Fitting the level height exactly makes on-screen tile size just
+    /// `screenHeight / level.height`, with zero margin — on a tall window
+    /// this made every tile (and the lemming sprites, sized relative to it)
+    /// render huge, since nothing else scales it down. This extra 35%
+    /// zoomed-out padding shows some sky/margin above and below instead of
+    /// filling edge-to-edge, shrinking tiles and lemmings by the same ratio.
+    private let heightFitPadding: CGFloat = 1.35
+
     func resizeViewport(to newSize: CGSize) {
         guard newSize.width > 0, newSize.height > 0 else { return }
         size = newSize
-        let fitHeightScale = worldHeight / newSize.height
+        let fitHeightScale = worldHeight * heightFitPadding / newSize.height
         gameCamera.setScale(min(max(fitHeightScale, minZoom), maxZoom))
         gameCamera.position.y = worldHeight / 2
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
@@ -275,7 +283,14 @@ final class GameScene: SKScene {
 
     override func update(_ currentTime: TimeInterval) {
         if lastUpdateTime == 0 { lastUpdateTime = currentTime }
-        let dt = currentTime - lastUpdateTime
+        // Clamp dt: after any stall (app backgrounded, a dropped-frame hitch,
+        // the pause sheet, a slow device), SpriteKit's next `update(_:)` can
+        // arrive with `currentTime` far ahead of `lastUpdateTime`. Without
+        // this cap, the accumulator below would replay all the missed ticks
+        // in one burst — a level's entire spawn queue and countdown timer
+        // fast-forwarding in a fraction of a second, which is exactly what
+        // made a level look broken/nonsensical after any real-world hitch.
+        let dt = min(currentTime - lastUpdateTime, 0.25)
         lastUpdateTime = currentTime
         guard !paused_ else { return }
         accumulator += dt
