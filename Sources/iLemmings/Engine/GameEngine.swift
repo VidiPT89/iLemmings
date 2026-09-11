@@ -98,8 +98,9 @@ final class GameEngine: ObservableObject {
             guard lem.state == .walking else { return }
             lem.state = .blocking
         case .builder:
+            // The original always builds exactly 12 bricks before reverting to a walker.
             guard lem.state == .walking else { return }
-            lem.state = .building(stepsLeft: 8)
+            lem.state = .building(stepsLeft: 12)
         case .basher:
             guard lem.state == .walking else { return }
             lem.state = .basher(stepsLeft: 10)
@@ -111,11 +112,23 @@ final class GameEngine: ObservableObject {
             lem.state = .digger(stepsLeft: 8)
         case .bomber:
             if case .exploding = lem.state { return } // already counting down, don't reset the timer
-            lem.state = .exploding(ticksLeft: Int(ticksPerSecond * 3))
+            // The original's "Oh No!" countdown is 5 seconds.
+            lem.state = .exploding(ticksLeft: Int(ticksPerSecond * 5))
         }
 
         lemmings[idx] = lem
         skillInventory[skill] = (skillInventory[skill] ?? 1) - 1
+        selectedSkill = nil
+    }
+
+    /// The classic "Nuke" button: arms every living lemming with a bomber
+    /// countdown at once, for when a level is unwinnable and the player
+    /// wants to end it quickly instead of waiting out the clock.
+    func nukeAll() {
+        for i in lemmings.indices where lemmings[i].isAlive {
+            if case .exploding = lemmings[i].state { continue }
+            lemmings[i].state = .exploding(ticksLeft: Int(ticksPerSecond * 5))
+        }
         selectedSkill = nil
     }
 

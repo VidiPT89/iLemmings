@@ -29,6 +29,8 @@
 "pauseResume" = "Retomar";
 "pauseRestart" = "Reiniciar";
 "pauseMenu" = "Menu Principal";
+"nukeConfirm" = "Dar a todos os lemmings uma contagem decrescente de explosão?";
+"nukeConfirmAction" = "Detonar";
 "levelWinTitle" = "Nível Concluído!";
 "levelWinBody" = "Salvaste lemmings suficientes.";
 "levelLoseTitle" = "Nível Falhado";

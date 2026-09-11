@@ -54,6 +54,8 @@ enum LocKey: String {
     case pauseResume
     case pauseRestart
     case pauseMenu
+    case nukeConfirm
+    case nukeConfirmAction
     case levelWinTitle
     case levelWinBody
     case levelLoseTitle
