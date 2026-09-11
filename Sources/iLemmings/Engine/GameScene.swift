@@ -69,6 +69,7 @@ final class GameScene: SKScene {
         addChild(terrainNode)
         lastGrid = Array(repeating: Array(repeating: Tile.empty, count: engine.width), count: engine.height)
         updateTerrain()
+        addChild(makeEntranceHatch())
 
         camera = gameCamera
         addChild(gameCamera)
@@ -138,7 +139,7 @@ final class GameScene: SKScene {
         CGFloat(engine.height - 1 - row) * tileSize
     }
 
-    private enum TerrainStyle: Hashable { case dirt, grassCap, steel, trap, exit, entrance }
+    private enum TerrainStyle: Hashable { case dirt, grassCap, steel, trap, exit }
 
     /// Dirt capped by open air gets a grassy highlight, like the classic
     /// hand-drawn hills — otherwise every level reads as flat brown blocks.
@@ -150,7 +151,7 @@ final class GameScene: SKScene {
         case .steel: return .steel
         case .trap: return .trap
         case .exit: return .exit
-        case .entrance: return .entrance
+        case .entrance: return nil // drawn as a dedicated hatch structure, see makeEntranceHatch()
         case .empty: return nil
         }
     }
@@ -187,8 +188,45 @@ final class GameScene: SKScene {
         .steel: speckleTexture(base: (0.30, 0.30, 0.32), variance: 0.04, seed: 3),
         .trap: speckleTexture(base: (0.55, 0.07, 0.05), variance: 0.06, seed: 4),
         .exit: speckleTexture(base: (0.70, 0.55, 0.10), variance: 0.05, seed: 5),
-        .entrance: speckleTexture(base: (0.12, 0.10, 0.09), variance: 0.03, seed: 6),
     ]
+
+    /// The classic hatch: a distinct metal doorway lemmings visibly walk out
+    /// of, not just a same-as-terrain speckled tile. Previously the entrance
+    /// tile used the same near-black speckle texture as the background,
+    /// so it was effectively invisible — lemmings appeared to spawn out of
+    /// nowhere. Built once (the entrance never moves), not through the
+    /// per-tick terrain diffing used for destructible tiles.
+    private func makeEntranceHatch() -> SKNode {
+        let node = SKNode()
+        node.zPosition = 5
+        node.position = CGPoint(
+            x: CGFloat(engine.entranceColumn) * tileSize + tileSize / 2,
+            y: flipRow(engine.entranceRow) + tileSize / 2
+        )
+
+        let frameSize = CGSize(width: tileSize * 1.6, height: tileSize * 1.6)
+        let frame = SKShapeNode(rectOf: frameSize, cornerRadius: 3)
+        frame.fillColor = SKColor(red: 0.30, green: 0.32, blue: 0.36, alpha: 1)
+        frame.strokeColor = SKColor(red: 0.62, green: 0.66, blue: 0.70, alpha: 1)
+        frame.lineWidth = 2
+        frame.position = CGPoint(x: 0, y: tileSize * 0.15)
+        node.addChild(frame)
+
+        let opening = SKShapeNode(rectOf: CGSize(width: tileSize * 1.1, height: tileSize * 1.0))
+        opening.fillColor = .black
+        opening.strokeColor = .clear
+        opening.position = CGPoint(x: 0, y: tileSize * 0.05)
+        frame.addChild(opening)
+
+        let light = SKShapeNode(circleOfRadius: 2.5)
+        light.fillColor = .systemGreen
+        light.strokeColor = .clear
+        light.position = CGPoint(x: 0, y: frameSize.height / 2 - 5)
+        light.run(.repeatForever(.sequence([.fadeAlpha(to: 0.3, duration: 0.6), .fadeAlpha(to: 1, duration: 0.6)])))
+        frame.addChild(light)
+
+        return node
+    }
 
     /// Only touches the cells that actually changed since last frame —
     /// digging/bashing/mining edit one or two tiles per tick, so rebuilding
