@@ -10,6 +10,10 @@ final class SoundManager: ObservableObject {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private var started = false
+    /// Mono format shared by the node connection and every generated buffer —
+    /// a mismatch here is what was crashing scheduleBuffer with
+    /// "_outputFormat.channelCount == buffer.format.channelCount".
+    private let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
 
     enum Effect {
         case select, assign, win, lose, explode
@@ -36,7 +40,7 @@ final class SoundManager: ObservableObject {
 
     init() {
         engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: nil)
+        engine.connect(player, to: engine.mainMixerNode, format: format)
     }
 
     private func ensureStarted() {
@@ -58,10 +62,9 @@ final class SoundManager: ObservableObject {
     }
 
     private func makeBuffer(frequency: Double, duration: Double) -> AVAudioPCMBuffer? {
-        let sampleRate = 44100.0
+        let sampleRate = format.sampleRate
         let frameCount = AVAudioFrameCount(sampleRate * duration)
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
         buffer.frameLength = frameCount
         guard let channel = buffer.floatChannelData?[0] else { return nil }
 
