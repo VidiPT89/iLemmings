@@ -27,10 +27,13 @@ final class GameScene: SKScene {
     /// Fitting the level height exactly makes on-screen tile size just
     /// `screenHeight / level.height`, with zero margin — on a tall window
     /// this made every tile (and the lemming sprites, sized relative to it)
-    /// render huge, since nothing else scales it down. This extra 35%
-    /// zoomed-out padding shows some sky/margin above and below instead of
-    /// filling edge-to-edge, shrinking tiles and lemmings by the same ratio.
-    private let heightFitPadding: CGFloat = 1.35
+    /// render huge, since nothing else scales it down. The original ran at
+    /// 320x200 with roughly 8px lemmings — tiny relative to the screen, with
+    /// a wide margin of visible terrain above/below the play area. 1.35 was
+    /// a first pass and still read as oversized; this shows noticeably more
+    /// sky/ground margin, shrinking tiles and lemmings by the same ratio to
+    /// land much closer to how small the original actually was.
+    private let heightFitPadding: CGFloat = 2.2
 
     private var terrainNode = SKNode()
     /// One optional node per cell, keyed by `row * width + col`. Updated
