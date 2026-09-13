@@ -19,10 +19,17 @@ final class GameEngine: ObservableObject {
     private var nextID = 0
     private let entrance: (row: Int, col: Int)
     private let maxSafeFall = 6
-    /// One walking step (one column) every 4 ticks — 5 tiles/sec at 20
-    /// ticks/sec, instead of the previous 1 tile/tick (20 tiles/sec) which
-    /// let a lemming cross an entire level and die before it was visible.
-    private let walkTicksPerStep = 4
+    /// Derived from the original's actual source (LemmingsJS's ActionWalkSystem):
+    /// it moves 1px/tick at a 60ms tick (~16.67 ticks/sec) — about 0.6s to
+    /// cross one lemming-height of ground. At this engine's 20 ticks/sec,
+    /// one tile every 12 ticks lands on the same ~0.6s pace. Also used for
+    /// Digger, whose original cadence (1 row/8 ticks ≈ 0.48s) is close to
+    /// walking speed.
+    private let walkTicksPerStep = 12
+    /// Basher/Miner/Builder tunnel through solid ground far slower than a
+    /// lemming walks — the original's ActionBashSystem/ActionBuildSystem
+    /// only advance once every 16-24 ticks (vs. walking's every tick).
+    private let workTicksPerStep = 24
 
     var ticksPerSecond: Double { 20 }
 
@@ -228,6 +235,9 @@ final class GameEngine: ObservableObject {
             break // stands still forever, acts as an obstacle in walk()
 
         case .building(let steps):
+            lem.actionProgress += 1
+            guard lem.actionProgress >= workTicksPerStep else { break }
+            lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
             if steps <= 0 {
@@ -251,7 +261,7 @@ final class GameEngine: ObservableObject {
 
         case .basher(let steps):
             lem.actionProgress += 1
-            guard lem.actionProgress >= walkTicksPerStep else { break }
+            guard lem.actionProgress >= workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
@@ -268,7 +278,7 @@ final class GameEngine: ObservableObject {
 
         case .miner(let steps):
             lem.actionProgress += 1
-            guard lem.actionProgress >= walkTicksPerStep else { break }
+            guard lem.actionProgress >= workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
@@ -283,6 +293,9 @@ final class GameEngine: ObservableObject {
             }
 
         case .digger(let steps):
+            lem.actionProgress += 1
+            guard lem.actionProgress >= walkTicksPerStep else { break }
+            lem.actionProgress = 0
             if steps <= 0 || tile(lem.y + 1, col) == .steel {
                 lem.state = .falling
             } else {
