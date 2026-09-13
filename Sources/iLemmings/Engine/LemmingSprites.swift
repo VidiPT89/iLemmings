@@ -2,8 +2,9 @@ import SpriteKit
 import CoreGraphics
 
 /// Procedural pixel-art sprites for the lemmings, drawn to match the classic
-/// 1991 look: blond/white hair, skin-tone face, sky-blue overalls, dark-blue
-/// shoes — the original lemming was never green-haired.
+/// 1991 look: green hair, skin-tone face, sky-blue overalls, dark-blue shoes
+/// — confirmed against an actual screenshot of the original (Wikipedia's
+/// Amiga_Lemmings.png), not just text descriptions.
 /// Built with CoreGraphics (not UIImage/NSImage) so the same code works on
 /// iOS and macOS.
 enum LemmingSprites {
@@ -11,7 +12,7 @@ enum LemmingSprites {
     private static let pixelScale = 6
 
     // 8 columns x 12 rows. '.' = transparent.
-    // 1 = hair (blond/white), 2 = skin, 3 = overalls (blue), 4 = shoe/outline (dark navy), 5 = eye (black)
+    // 1 = hair (green), 2 = skin, 3 = overalls (blue), 4 = shoe/outline (dark navy), 5 = eye (black)
     private static let walkFrame1: [String] = [
         "..1111..",
         ".111111.",
@@ -89,7 +90,7 @@ enum LemmingSprites {
 
     private static func color(for code: Character) -> CGColor {
         switch code {
-        case "1": return CGColor(red: 0.95, green: 0.90, blue: 0.72, alpha: 1) // hair blond/white, matching the original (never green)
+        case "1": return CGColor(red: 0.15, green: 0.62, blue: 0.20, alpha: 1) // hair green — confirmed against an actual screenshot of the original (a prior text-only research pass wrongly said blond)
         case "2": return CGColor(red: 0.93, green: 0.74, blue: 0.55, alpha: 1) // skin
         case "3": return CGColor(red: 0.15, green: 0.45, blue: 0.85, alpha: 1) // overalls blue
         case "4": return CGColor(red: 0.08, green: 0.10, blue: 0.20, alpha: 1) // shoes/outline

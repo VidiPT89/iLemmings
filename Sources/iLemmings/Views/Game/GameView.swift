@@ -117,19 +117,21 @@ struct GameView: View {
 /// (OUT / IN / TIME), instead of a brand-colored UI font.
 private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
 
-/// A dithered/stippled yellow tile, like the original's skill button
-/// background — a flat gold fill reads as a modern app icon, not the game.
-private struct DitheredYellowBackground: View {
+/// A dithered/stippled brown-tan tile, like the original's skill button
+/// background (verified against an actual screenshot of the original) — a
+/// flat gold fill reads as a modern app icon, and the original's buttons
+/// are brown/tan, not bright yellow.
+private struct DitheredSkillBackground: View {
     var body: some View {
         Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.62, green: 0.5, blue: 0.14)))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.32, green: 0.22, blue: 0.13)))
             let dot = 3.0
             var y = 0.0
             var row = 0
             while y < size.height {
                 var x = row.isMultiple(of: 2) ? 0.0 : dot
                 while x < size.width {
-                    context.fill(Path(CGRect(x: x, y: y, width: dot, height: dot)), with: .color(Color(red: 0.78, green: 0.66, blue: 0.2)))
+                    context.fill(Path(CGRect(x: x, y: y, width: dot, height: dot)), with: .color(Color(red: 0.45, green: 0.33, blue: 0.19)))
                     x += dot * 2
                 }
                 y += dot
@@ -139,10 +141,13 @@ private struct DitheredYellowBackground: View {
     }
 }
 
-/// The original's single control panel fixed at the bottom of the screen:
-/// a thin LCD info strip (released/out, saved/needed, time) above one row
-/// containing Pause, the 8 skill buttons, Nuke and Mute — not a floating
-/// top bar plus a separate bottom tray plus floating zoom buttons.
+/// The original's single control panel fixed at the bottom of the screen —
+/// one row with the 8 skill buttons, Pause, Nuke and Mute on the left, and
+/// the green LCD counters (out/saved/time) on the right, all on the same
+/// line. Verified against an actual screenshot of the original (Wikipedia's
+/// Amiga_Lemmings.png) — a stacked stats-strip-above-icons layout, a
+/// floating top bar, a separate bottom tray, and floating zoom buttons were
+/// all earlier guesses that didn't match the real thing.
 private struct BottomControlPanel: View {
     @ObservedObject var engine: GameEngine
     @EnvironmentObject var loc: LocalizationManager
@@ -151,18 +156,17 @@ private struct BottomControlPanel: View {
     @State private var showNukeConfirm = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            statsBar
-            HStack(spacing: 2) {
-                ControlButton(systemImage: "pause.fill") { isPaused = true }
-                ForEach(LemSkill.allCases) { skill in
-                    SkillButton(skill: skill, engine: engine)
-                }
-                ControlButton(systemImage: "flame.fill") { showNukeConfirm = true }
-                ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
-                    sound.isMuted.toggle()
-                }
+        HStack(spacing: 2) {
+            ForEach(LemSkill.allCases) { skill in
+                SkillButton(skill: skill, engine: engine)
             }
+            ControlButton(systemImage: "pause.fill") { isPaused = true }
+            ControlButton(systemImage: "flame.fill") { showNukeConfirm = true }
+            ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
+                sound.isMuted.toggle()
+            }
+            Spacer(minLength: 8)
+            statsRow
         }
         .background(Color.black)
         .overlay(Rectangle().strokeBorder(Color(red: 0.55, green: 0.6, blue: 0.65).opacity(0.6), lineWidth: 1))
@@ -171,33 +175,24 @@ private struct BottomControlPanel: View {
         }
     }
 
-    private var statsBar: some View {
-        HStack(spacing: 0) {
+    private var statsRow: some View {
+        HStack(spacing: 10) {
             statCell(loc.string(.hudLemmingsOut), "\(engine.spawnedCount - engine.savedCount - engine.deadCount)")
-            divider
             statCell(loc.string(.hudLemmingsSaved), "\(engine.savedCount)/\(engine.level.neededToSave)", animated: true)
-            divider
             statCell(loc.string(.hudTimeLeft), timeString(engine.secondsRemaining))
         }
-        .frame(maxWidth: .infinity)
         .foregroundStyle(lcdGreen)
-        .overlay(Rectangle().fill(lcdGreen.opacity(0.25)).frame(height: 1), alignment: .bottom)
-    }
-
-    private var divider: some View {
-        Rectangle().fill(lcdGreen.opacity(0.25)).frame(width: 1, height: 28)
+        .padding(.trailing, 12)
     }
 
     private func statCell(_ title: String, _ value: String, animated: Bool = false) -> some View {
-        VStack(spacing: 1) {
-            Text(title).font(.system(size: 9, weight: .medium, design: .monospaced)).opacity(0.7)
+        VStack(spacing: 0) {
+            Text(title).font(.system(size: 8, weight: .medium, design: .monospaced)).opacity(0.7)
             Text(value)
-                .font(.system(.subheadline, design: .monospaced)).bold()
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .contentTransition(animated ? .numericText() : .identity)
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: value)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 5)
     }
 
     private func timeString(_ seconds: Int) -> String {
@@ -232,10 +227,10 @@ private struct SkillButton: View {
             engine.selectSkill(skill)
         } label: {
             ZStack(alignment: .topLeading) {
-                DitheredYellowBackground()
+                DitheredSkillBackground()
                 Image(systemName: skill.symbol)
                     .font(.title3)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(Color(red: 0.15, green: 0.62, blue: 0.20))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Text("\(count)")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))

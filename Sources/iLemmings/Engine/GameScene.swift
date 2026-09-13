@@ -421,7 +421,7 @@ final class GameScene: SKScene {
 
     /// Picks the right pixel-art frame/animation and skill badge for the
     /// lemming's current state, without recoloring the sprite itself — the
-    /// blond hair / blue overalls silhouette must always read as a lemming.
+    /// green hair / blue overalls silhouette must always read as a lemming.
     private func updateAppearance(_ node: SKSpriteNode, for lem: Lemming) {
         let badge = node.childNode(withName: "badge") as? SKShapeNode
         badge?.isHidden = true
