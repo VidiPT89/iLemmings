@@ -201,6 +201,12 @@ private struct BottomControlPanel: View {
     }
 }
 
+/// Fixed, small button size — the original's panel buttons are a compact
+/// strip that never stretches to fill the window width. `maxWidth: .infinity`
+/// on each button here used to do exactly that on a wide macOS window,
+/// which is why the whole panel read as oversized.
+private let controlButtonSize: CGFloat = 34
+
 private struct ControlButton: View {
     let systemImage: String
     let action: () -> Void
@@ -208,8 +214,9 @@ private struct ControlButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
+                .font(.system(size: 14))
                 .foregroundStyle(lcdGreen)
-                .frame(width: 40, height: 50)
+                .frame(width: controlButtonSize, height: controlButtonSize)
         }
         .buttonStyle(.plain)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
@@ -229,18 +236,17 @@ private struct SkillButton: View {
             ZStack(alignment: .topLeading) {
                 DitheredSkillBackground()
                 Image(systemName: skill.symbol)
-                    .font(.title3)
+                    .font(.system(size: 14))
                     .foregroundStyle(Color(red: 0.15, green: 0.62, blue: 0.20))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Text("\(count)")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 3)
+                    .padding(.horizontal, 2)
                     .background(Color.black.opacity(0.75))
-                    .padding(2)
+                    .padding(1)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(width: controlButtonSize, height: controlButtonSize)
             .overlay(Rectangle().strokeBorder(selected ? Color.red : Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: selected ? 3 : 1))
         }
         .buttonStyle(.plain)
