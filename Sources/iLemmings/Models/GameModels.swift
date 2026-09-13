@@ -47,9 +47,11 @@ enum LemState: Equatable {
     case climbing
     case blocking
     case building(stepsLeft: Int)
-    case basher(stepsLeft: Int)
-    case miner(stepsLeft: Int)
-    case digger(stepsLeft: Int)
+    // Basher/Miner/Digger have no step limit in the original — they tunnel
+    // until they hit steel, open air, or a missing floor, whichever first.
+    case basher
+    case miner
+    case digger
     case floating
     case exploding(ticksLeft: Int)
     case saved
