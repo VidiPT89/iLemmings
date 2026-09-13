@@ -65,11 +65,13 @@ struct Lemming: Identifiable {
     var fallDistance: Int = 0
     var hasClimber: Bool = false
     var hasFloater: Bool = false
-    /// Ticks accumulated since the last walking/bashing/mining step — these
-    /// only advance one tile every `GameEngine.walkTicksPerStep` ticks
-    /// instead of one full tile per tick (20 tiles/sec), which made lemmings
-    /// cross an entire level (or tunnel through it) and die in well under a
-    /// second, before a player could even react.
+    /// Ticks accumulated since the last walking/digging/bashing/mining/
+    /// building step — these only advance one tile every
+    /// `GameEngine.walkTicksPerStep`/`workTicksPerStep` ticks, matching the
+    /// relative pacing of the original's actual per-action frame cadence
+    /// (verified against LemmingsJS's source), instead of one full tile per
+    /// tick (20 tiles/sec), which made lemmings cross an entire level (or
+    /// tunnel through it) and die in well under a second.
     var actionProgress: Int = 0
     var isAlive: Bool { state != .dead && state != .saved }
 }
