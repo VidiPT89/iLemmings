@@ -109,14 +109,15 @@ final class GameEngine: ObservableObject {
             guard lem.state == .walking else { return }
             lem.state = .building(stepsLeft: 12)
         case .basher:
+            // Unlimited, like the original — stops at steel, open air, or a missing floor.
             guard lem.state == .walking else { return }
-            lem.state = .basher(stepsLeft: 10)
+            lem.state = .basher
         case .miner:
             guard lem.state == .walking else { return }
-            lem.state = .miner(stepsLeft: 10)
+            lem.state = .miner
         case .digger:
             guard lem.state == .walking else { return }
-            lem.state = .digger(stepsLeft: 8)
+            lem.state = .digger
         case .bomber:
             if case .exploding = lem.state { return } // already counting down, don't reset the timer
             // The original's "Oh No!" countdown is 5 seconds.
@@ -259,49 +260,46 @@ final class GameEngine: ObservableObject {
                 if steps % 2 == 0 && lem.y > 0 { lem.y -= 1 }
             }
 
-        case .basher(let steps):
+        case .basher:
             lem.actionProgress += 1
             guard lem.actionProgress >= workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
             let noFloorAhead = !isSolid(tile(lem.y + 1, frontCol))
-            if steps <= 0 || tile(lem.y, frontCol) == .steel || noFloorAhead {
+            if tile(lem.y, frontCol) == .steel || noFloorAhead {
                 lem.state = .walking
             } else if !isSolid(tile(lem.y, frontCol)) {
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .empty)
                 lem.x += Double(dir)
-                lem.state = .basher(stepsLeft: steps - 1)
             }
 
-        case .miner(let steps):
+        case .miner:
             lem.actionProgress += 1
             guard lem.actionProgress >= workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
-            if steps <= 0 || tile(lem.y, frontCol) == .steel || tile(lem.y + 1, frontCol) == .steel {
+            if tile(lem.y, frontCol) == .steel || tile(lem.y + 1, frontCol) == .steel {
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .empty)
                 setTile(lem.y + 1, frontCol, .empty)
                 lem.x += Double(dir)
                 lem.y += 1
-                lem.state = .miner(stepsLeft: steps - 1)
             }
 
-        case .digger(let steps):
+        case .digger:
             lem.actionProgress += 1
             guard lem.actionProgress >= walkTicksPerStep else { break }
             lem.actionProgress = 0
-            if steps <= 0 || tile(lem.y + 1, col) == .steel {
+            if tile(lem.y + 1, col) == .steel {
                 lem.state = .falling
             } else {
                 setTile(lem.y + 1, col, .empty)
                 lem.y += 1
-                lem.state = .digger(stepsLeft: steps - 1)
             }
 
         case .climbing:
