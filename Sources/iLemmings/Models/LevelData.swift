@@ -20,7 +20,13 @@ enum LevelLibrary {
         let shaft = row(width, [("#", 12), (".", 3), ("#", 15)])
         let floor = row(width, [("#", 12), ("T", 3), ("#", 15)])
 
-        var rows: [String] = [air, entranceRow, air, air, platform]
+        // Extra headroom above the platform: Builder's fixed 12-brick
+        // staircase climbs one row per brick, so bridging a 3-tile gap
+        // needs enough sky above the platform to climb that high without
+        // hitting the top of the map before the staircase reaches the far
+        // side — verified by a headless simulation that previously showed
+        // the lemming falling one column short of the far ledge.
+        var rows: [String] = [air, air, entranceRow, air, air, platform]
         rows.append(contentsOf: Array(repeating: shaft, count: 10))
         rows.append(floor)
 
