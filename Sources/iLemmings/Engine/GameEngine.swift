@@ -241,23 +241,32 @@ final class GameEngine: ObservableObject {
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
+            // Each step moves the lemming one tile forward and one row up,
+            // to (lem.y - 1, frontCol); the tile that supports that new spot
+            // is one row *below* it (this engine's convention throughout:
+            // footing for row R is at row R+1), which is exactly the OLD
+            // row, at the NEW column — so the brick goes at (lem.y, frontCol)
+            // before y is decremented. The previous version moved x by only
+            // 0.5/step and y only every other step, which desynced brick
+            // placement from the lemming's actual column once climbing got
+            // capped at row 0 — bricks kept landing one row too low to
+            // support the still-advancing lemming, so it ended up walking
+            // over nothing until it fell. Moving a full tile every step
+            // keeps brick and position locked together, every step.
             if steps <= 0 {
                 lem.state = .walking
-            } else if lem.y - 1 >= 0 && isSolid(tile(lem.y - 1, frontCol)) {
-                // Blocked by a real wall/steel ahead — the original stops the builder
-                // here. `lem.y - 1 >= 0` matters because `tile()` returns `.steel` for
-                // any out-of-bounds row (including above the map), so a tall bridge
-                // climbing toward row 0 would otherwise read the open sky above the
-                // level as a wall and stop dead, stranding the lemming mid-air.
+            } else if lem.y - 1 < 0 {
+                // No room left to climb — stop instead of continuing to
+                // advance with no ground underneath.
+                lem.state = .walking
+            } else if isSolid(tile(lem.y - 1, frontCol)) {
+                // Blocked by a real wall/steel ahead — the original stops the builder here.
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .dirt)
-                lem.x += Double(dir) * 0.5
+                lem.y -= 1
+                lem.x = Double(frontCol)
                 lem.state = .building(stepsLeft: steps - 1)
-                // Never climb above row 0 — a staircase that reached the top of
-                // the map used to keep decrementing y past it, leaving the
-                // lemming permanently stuck at an invalid negative row.
-                if steps % 2 == 0 && lem.y > 0 { lem.y -= 1 }
             }
 
         case .basher:
