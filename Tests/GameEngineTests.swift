@@ -107,4 +107,53 @@ final class GameEngineTests: XCTestCase {
         XCTAssertTrue(engine.lemmings.contains { $0.state == .blocking })
         XCTAssertGreaterThanOrEqual(engine.spawnedCount, 2)
     }
+
+    func testClimberScalesATallWall() {
+        let level = tinyLevel(
+            rows: [
+                "......X",
+                "E.S....",
+                "..S....",
+                "..S....",
+                "#######",
+            ],
+            skills: [.climber: 1],
+            time: 90
+        )
+        let engine = GameEngine(level: level)
+        for _ in 0..<2500 {
+            engine.tick()
+            if let lem = engine.lemmings.first, lem.state == .walking || lem.state == .climbing {
+                engine.selectSkill(.climber)
+                engine.applySelectedSkill(to: lem.id)
+            }
+        }
+        XCTAssertGreaterThan(engine.savedCount, 0)
+    }
+
+    func testNukeStopsTheHatch() {
+        let level = tinyLevel(
+            rows: ["E...X", "#####"],
+            total: 8,
+            need: 1,
+            time: 40
+        )
+        let engine = GameEngine(level: level)
+        for _ in 0..<5 { engine.tick() }
+        let before = engine.spawnedCount
+        XCTAssertGreaterThan(before, 0)
+        engine.nukeAll()
+        for _ in 0..<80 { engine.tick() }
+        XCTAssertEqual(engine.spawnedCount, before)
+    }
+
+    func testBuiltInLevelsAreWellFormed() {
+        for level in LevelLibrary.all {
+            XCTAssertTrue(level.rows.allSatisfy { $0.count == level.width }, level.id)
+            XCTAssertTrue(level.rows.joined().contains("E"), level.id)
+            XCTAssertTrue(level.rows.joined().contains("X"), level.id)
+            XCTAssertLessThanOrEqual(level.neededToSave, level.totalLemmings, level.id)
+        }
+        XCTAssertEqual(LevelLibrary.all.count, 8)
+    }
 }
