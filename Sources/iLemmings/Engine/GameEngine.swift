@@ -222,9 +222,10 @@ final class GameEngine: ObservableObject {
     private func evaluateEndConditions() {
         let allLemmingsResolved = spawnedCount >= level.totalLemmings && lemmings.allSatisfy { !$0.isAlive }
         let finishingAnimation = lemmings.contains {
-            if case .splatting = $0.state { return true }
-            if case .ohNo = $0.state { return true }
-            return false
+            switch $0.state {
+            case .splatting, .drowning, .ohNo: return true
+            default: return false
+            }
         }
         // Wait for splat/Oh-No so the last death is visible; otherwise end
         // when everyone is resolved or the clock hits zero.
@@ -252,6 +253,10 @@ final class GameEngine: ObservableObject {
             }
         }
 
+        if case .drowning(let ticksLeft) = lem.state {
+            lem.state = ticksLeft <= 0 ? .dead : .drowning(ticksLeft: ticksLeft - 1)
+            return
+        }
         if case .splatting(let ticksLeft) = lem.state {
             lem.state = ticksLeft <= 0 ? .dead : .splatting(ticksLeft: ticksLeft - 1)
             return
@@ -261,6 +266,10 @@ final class GameEngine: ObservableObject {
             return
         }
 
+        if tile(lem.y, col) == .water {
+            drown(&lem)
+            return
+        }
         if tile(lem.y, col) == .trap {
             splat(&lem)
             return
@@ -411,9 +420,18 @@ final class GameEngine: ObservableObject {
                 lem.state = .ohNo(ticksLeft: ticksLeft - 1)
             }
 
-        case .shrugging, .splatting, .saved, .dead:
+        case .shrugging, .splatting, .drowning, .saved, .dead:
             break
         }
+    }
+
+    private func drown(_ lem: inout Lemming) {
+        guard lem.isAlive else { return }
+        if case .drowning = lem.state { return }
+        if case .splatting = lem.state { return }
+        lem.state = .drowning(ticksLeft: 16)
+        lem.countdownTicks = 0
+        deadCount += 1
     }
 
     private func splat(_ lem: inout Lemming) {
@@ -442,7 +460,12 @@ final class GameEngine: ObservableObject {
         let dir = lem.facingRight ? 1 : -1
         let frontCol = col + dir
 
-        let blockedByLemming = lemmings.contains { $0.y == lem.y && Int($0.x.rounded()) == frontCol && $0.state == .blocking }
+        let blockedByLemming = lemmings.contains { other in
+            other.id != lem.id
+                && other.state == .blocking
+                && other.y == lem.y
+                && abs(Int(other.x.rounded()) - col) <= 1
+        }
         if blockedByLemming {
             lem.facingRight.toggle()
             return

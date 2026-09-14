@@ -13,7 +13,7 @@
 - ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with walking, climbing, blocking and floater poses
 - ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it
 - ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber, confetti on victory
-- ✅ Four level packs (Fun, Tricky, Taxing, Mayhem) with a 1-3 star rating per level based on lemmings saved and time left
+- ✅ Eight built-in levels across Fun, Tricky, Taxing and Mayhem, including water that drowns (floaters do not save you)
 - ✅ SFX and haptic feedback on skill assignment, level win and level loss, with a one-tap mute
 - ✅ Pause, retry and win/lose flows with level unlocking
 - ✅ Bilingual PT-PT / English in-app language switch backed by real `.lproj` bundles, no need to change your device language
@@ -66,6 +66,7 @@ Pick the `iLemmings-iOS` or `iLemmings-macOS` scheme and run (`⌘R`).
 ## 🧪 Testing
 
 ```bash
+xcodebuild -project iLemmings.xcodeproj -scheme iLemmings-macOS -destination 'platform=macOS' test
 xcodebuild -project iLemmings.xcodeproj -scheme iLemmings-iOS -destination 'generic/platform=iOS Simulator' build
 xcodebuild -project iLemmings.xcodeproj -scheme iLemmings-macOS -destination 'platform=macOS' build
 ```
