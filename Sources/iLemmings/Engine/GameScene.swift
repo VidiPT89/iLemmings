@@ -15,15 +15,13 @@ struct SeededGenerator: RandomNumberGenerator {
 
 final class GameScene: SKScene {
     let engine: GameEngine
-    private let tileSize: CGFloat = 22
-    /// How many tiles are visible across the screen width at default zoom.
-    /// Levels are much wider than this, so the camera scrolls horizontally —
-    /// the classic Lemmings view (full level height visible, side-scrolling),
-    /// instead of squeezing the whole level into the screen and making every
-    /// lemming a few pixels tall.
-    private let visibleTilesWide: CGFloat = 15
+    private let tileSize: CGFloat = 14
+    /// Upper bound on how large a tile may appear on screen (points). Fitting
+    /// the full level height into a tall Mac window used to blow tiles up to
+    /// 50pt+ and make every lemming the size of a toolbar button.
+    private let maxTileOnScreen: CGFloat = 14
     private let minZoom: CGFloat = 0.15
-    private let maxZoom: CGFloat = 4.0
+    private let maxZoom: CGFloat = 8.0
 
     private var terrainNode = SKNode()
     /// One optional node per cell, keyed by `row * width + col`. Updated
@@ -50,13 +48,11 @@ final class GameScene: SKScene {
     var onSplat: (() -> Void)?
     var onDrown: (() -> Void)?
     private var lastPointer: CGPoint?
-    private var hoverRing = SKShapeNode(circleOfRadius: 10)
+    private var hoverRing = SKShapeNode(circleOfRadius: 7)
 
     init(engine: GameEngine) {
         self.engine = engine
-        let viewportWidth = min(CGFloat(engine.width), visibleTilesWide) * tileSize
-        let viewportHeight = CGFloat(engine.height) * tileSize
-        super.init(size: CGSize(width: viewportWidth, height: viewportHeight))
+        super.init(size: CGSize(width: 320, height: 160))
         // .resizeFill maps 1 scene point to 1 view point exactly, so lemmings
         // always render at a fixed, readable pixel size. .aspectFit used to
         // squeeze the (roughly square) level into whatever window/screen
@@ -99,20 +95,16 @@ final class GameScene: SKScene {
     func setEnginePaused(_ paused: Bool) { paused_ = paused }
 
     /// Called by the SwiftUI container whenever the actual on-screen size
-    /// changes (window resize, rotation). The level's world is a fixed,
-    /// modest size in points (tileSize * tile count) — without this, a big
-    /// macOS window would just show a small island of level surrounded by
-    /// empty background. Zoom is set so the full level height always fills
-    /// the view, matching the classic Lemmings full-height, side-scrolling
-    /// camera; horizontal panning reveals the rest of the (wider) level.
+    /// changes. Camera scale is inverted: larger scale shows more world
+    /// (smaller sprites). Always show the full level height; never zoom in
+    /// past `maxTileOnScreen`, so a tall window does not inflate the lemmings.
     func resizeViewport(to newSize: CGSize) {
         guard newSize.width > 0, newSize.height > 0 else { return }
         size = newSize
-        // Camera scale is inverted: 2 shows twice as much scene. Fit the
-        // full level height into the SpriteView (which is now only the
-        // playfield, not the whole window).
         let fitHeightScale = worldHeight / newSize.height
-        gameCamera.setScale(min(max(fitHeightScale, minZoom), maxZoom))
+        let capZoomIn = tileSize / maxTileOnScreen
+        let scale = max(fitHeightScale, capZoomIn)
+        gameCamera.setScale(min(max(scale, minZoom), maxZoom))
         gameCamera.position.y = worldHeight / 2
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
     }
@@ -421,7 +413,7 @@ final class GameScene: SKScene {
 
     private func makeLemmingNode(for lem: Lemming) -> SKSpriteNode {
         let node = SKSpriteNode(texture: LemmingSprites.stand)
-        node.size = CGSize(width: tileSize * 1.1, height: tileSize * 1.8)
+        node.size = CGSize(width: tileSize * 0.85, height: tileSize * 1.35)
         node.anchorPoint = CGPoint(x: 0.5, y: 0)
         node.name = "lem-\(lem.id)"
         node.zPosition = 10
@@ -436,7 +428,7 @@ final class GameScene: SKScene {
 
         let countLabel = SKLabelNode(fontNamed: "Menlo-Bold")
         countLabel.name = "countdown"
-        countLabel.fontSize = 10
+        countLabel.fontSize = 8
         countLabel.fontColor = SKColor(red: 0.35, green: 0.95, blue: 0.35, alpha: 1)
         countLabel.verticalAlignmentMode = .center
         countLabel.position = CGPoint(x: 0, y: node.size.height + 8)

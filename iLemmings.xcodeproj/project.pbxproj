@@ -72,7 +72,7 @@
 		37C9C057E9060F013AECFB63 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		399F887D08D21EA2A6E4C9E7 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		5154F090593B38285B43ADDA /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iLemmings-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		540A907878A3A9BDA26E89FE /* iLemmings.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iLemmings.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		62DF52C845673D13BE6FFF44 /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
 		67132860345F486CAE02F9E2 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LemmingSprites.swift; sourceTree = "<group>"; };
@@ -87,7 +87,7 @@
 		AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecorativeWalkersView.swift; sourceTree = "<group>"; };
 		B2B0794E9737135F5E24F53E /* GameEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEngineTests.swift; sourceTree = "<group>"; };
 		B8B48E805C717F3D2CD62A1F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
-		CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "iLemmings-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB4C9D650653BF248A7DEDCB /* iLemmings.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iLemmings.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iLemmingsApp.swift; sourceTree = "<group>"; };
 		CB882F0F3A8A48597A09FEEE /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		E9A41C4B9449FCC3371D5B11 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
@@ -143,8 +143,8 @@
 		67862BC6D11FA132010BDB05 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */,
-				540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */,
+				CB4C9D650653BF248A7DEDCB /* iLemmings.app */,
+				540A907878A3A9BDA26E89FE /* iLemmings.app */,
 				36B7796826F12729C6A9A5B7 /* iLemmingsTests.xctest */,
 			);
 			name = Products;
@@ -250,7 +250,7 @@
 			packageProductDependencies = (
 			);
 			productName = "iLemmings-iOS";
-			productReference = CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */;
+			productReference = CB4C9D650653BF248A7DEDCB /* iLemmings.app */;
 			productType = "com.apple.product-type.application";
 		};
 		B1B38DA4269B09A614C38691 /* iLemmingsTests */ = {
@@ -286,7 +286,7 @@
 			packageProductDependencies = (
 			);
 			productName = "iLemmings-macOS";
-			productReference = 540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */;
+			productReference = 540A907878A3A9BDA26E89FE /* iLemmings.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -297,8 +297,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = 51C0D68FFBCE7F35AC017264 /* Build configuration list for PBXProject "iLemmings" */;
 			developmentRegion = en;
@@ -434,6 +432,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = S769436W24;
 				INFOPLIST_FILE = "Sources/Info-iOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -452,6 +451,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COMBINE_HIDPI_IMAGES = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = S769436W24;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -536,6 +536,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = S769436W24;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = "Sources/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -613,6 +614,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COMBINE_HIDPI_IMAGES = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = S769436W24;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -630,6 +632,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = S769436W24;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = "Sources/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -647,6 +650,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = S769436W24;
 				INFOPLIST_FILE = "Sources/Info-iOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
