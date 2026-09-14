@@ -176,7 +176,7 @@ final class GameEngine: ObservableObject {
         }
 
         // LemmingsJS: spawn when releaseTickIndex >= (104 - releaseRate).
-        if spawnedCount < level.totalLemmings {
+        if spawnedCount < level.totalLemmings, !nukeArmed {
             releaseTickIndex += 1
             if releaseTickIndex >= (104 - releaseRate) {
                 releaseTickIndex = 0
@@ -400,15 +400,18 @@ final class GameEngine: ObservableObject {
             lem.actionProgress += 1
             guard lem.actionProgress >= climbTicksPerStep else { break }
             lem.actionProgress = 0
+            let dir = lem.facingRight ? 1 : -1
+            let wallCol = col + dir
             let above = lem.y - 1
-            if !isSolid(tile(above, col)) {
-                lem.y = above
-                lem.state = .walking
-            } else if above <= 0 {
+            if above < 0 {
                 lem.facingRight.toggle()
                 lem.state = .walking
+            } else if isSolid(tile(above, wallCol)) {
+                lem.y = above
             } else {
                 lem.y = above
+                lem.x = Double(wallCol)
+                lem.state = .walking
             }
 
         case .ohNo(let ticksLeft):
@@ -461,10 +464,9 @@ final class GameEngine: ObservableObject {
         let frontCol = col + dir
 
         let blockedByLemming = lemmings.contains { other in
-            other.id != lem.id
-                && other.state == .blocking
-                && other.y == lem.y
-                && abs(Int(other.x.rounded()) - col) <= 1
+            guard other.id != lem.id, other.state == .blocking, other.y == lem.y else { return false }
+            let otherCol = Int(other.x.rounded())
+            return otherCol == col || otherCol == frontCol
         }
         if blockedByLemming {
             lem.facingRight.toggle()
