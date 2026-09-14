@@ -38,10 +38,7 @@ enum LocKey: String {
     case settingsSound
     case settingsClose
     case levelsTitle
-    case hudLemmingsOut
-    case hudLemmingsSaved
     case hudLemmingsNeeded
-    case hudTimeLeft
     case skillClimber
     case skillFloater
     case skillBomber

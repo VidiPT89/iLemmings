@@ -14,11 +14,23 @@ final class GameEngine: ObservableObject {
     @Published private(set) var isLost = false
     @Published var skillInventory: [LemSkill: Int]
     @Published var selectedSkill: LemSkill?
+    /// Classic 1-99 release rate (LemmingsJS `GameVictoryCondition`).
+    @Published private(set) var releaseRate: Int
+    /// 1 = normal, 3 = fast-forward like the original speed control.
+    @Published var gameSpeed: Int = 1
 
     private var tickCounter = 0
     private var nextID = 0
+    private var releaseTickIndex = 0
+    private var nukeArmed = false
+    private var nextNukeIndex = 0
     private let entrance: (row: Int, col: Int)
     private let maxSafeFall = 6
+    private let bomberFuseTicks = 100
+    private let ohNoTicks = 16
+    private let fallTicksPerStep = 4
+    private let floatTicksPerStep = 8
+    private let climbTicksPerStep = 8
     /// Derived from the original's actual source (LemmingsJS's ActionWalkSystem):
     /// it moves 1px/tick at a 60ms tick (~16.67 ticks/sec) — about 0.6s to
     /// cross one lemming-height of ground. At this engine's 20 ticks/sec,
@@ -39,6 +51,8 @@ final class GameEngine: ObservableObject {
         self.grid = parsedGrid
         self.secondsRemaining = level.timeLimitSeconds
         self.skillInventory = level.skillCounts
+        self.releaseRate = level.minReleaseRate
+        self.releaseTickIndex = level.minReleaseRate - 30
         var found = (row: 1, col: 1)
         for (r, row) in parsedGrid.enumerated() {
             for (c, t) in row.enumerated() where t == .entrance {
@@ -62,8 +76,13 @@ final class GameEngine: ObservableObject {
         isLost = false
         skillInventory = level.skillCounts
         selectedSkill = nil
+        releaseRate = level.minReleaseRate
+        gameSpeed = 1
         tickCounter = 0
         nextID = 0
+        releaseTickIndex = level.minReleaseRate - 30
+        nukeArmed = false
+        nextNukeIndex = 0
     }
 
     var width: Int { level.width }
@@ -83,7 +102,18 @@ final class GameEngine: ObservableObject {
 
     func selectSkill(_ skill: LemSkill) {
         guard (skillInventory[skill] ?? 0) > 0 else { return }
-        selectedSkill = (selectedSkill == skill) ? nil : skill
+        // Original never toggles a skill off: clicking the same button again
+        // keeps it selected so you can assign it to many lemmings in a row.
+        selectedSkill = skill
+    }
+
+    func changeReleaseRate(_ delta: Int) {
+        let next = releaseRate + delta
+        releaseRate = min(99, max(level.minReleaseRate, next))
+    }
+
+    func toggleFastForward() {
+        gameSpeed = gameSpeed == 1 ? 3 : 1
     }
 
     /// Attempts to assign the currently selected skill to the lemming at index.
@@ -119,25 +149,23 @@ final class GameEngine: ObservableObject {
             guard lem.state == .walking else { return }
             lem.state = .digger
         case .bomber:
-            if case .exploding = lem.state { return } // already counting down, don't reset the timer
-            // The original's "Oh No!" countdown is 5 seconds.
-            lem.state = .exploding(ticksLeft: Int(ticksPerSecond * 5))
+            guard lem.countdownTicks == 0 else { return }
+            if case .ohNo = lem.state { return }
+            lem.countdownTicks = bomberFuseTicks
         }
 
         lemmings[idx] = lem
-        skillInventory[skill] = (skillInventory[skill] ?? 1) - 1
-        selectedSkill = nil
+        let remaining = (skillInventory[skill] ?? 1) - 1
+        skillInventory[skill] = remaining
+        if remaining <= 0, selectedSkill == skill {
+            selectedSkill = nil
+        }
     }
 
-    /// The classic "Nuke" button: arms every living lemming with a bomber
-    /// countdown at once, for when a level is unwinnable and the player
-    /// wants to end it quickly instead of waiting out the clock.
+    /// Classic Nuke: arms one living lemming per tick, like LemmingsJS.
     func nukeAll() {
-        for i in lemmings.indices where lemmings[i].isAlive {
-            if case .exploding = lemmings[i].state { continue }
-            lemmings[i].state = .exploding(ticksLeft: Int(ticksPerSecond * 5))
-        }
-        selectedSkill = nil
+        nukeArmed = true
+        nextNukeIndex = 0
     }
 
     func tick() {
@@ -148,8 +176,17 @@ final class GameEngine: ObservableObject {
             secondsRemaining -= 1
         }
 
-        if spawnedCount < level.totalLemmings, tickCounter % level.spawnIntervalTicks == 0 || spawnedCount == 0 {
-            spawn()
+        // LemmingsJS: spawn when releaseTickIndex >= (104 - releaseRate).
+        if spawnedCount < level.totalLemmings {
+            releaseTickIndex += 1
+            if releaseTickIndex >= (104 - releaseRate) {
+                releaseTickIndex = 0
+                spawn()
+            }
+        }
+
+        if nukeArmed {
+            armNextNukeTarget()
         }
 
         for i in lemmings.indices {
@@ -157,6 +194,19 @@ final class GameEngine: ObservableObject {
         }
 
         evaluateEndConditions()
+    }
+
+    /// Original nuke arms one living lemming per tick, not the whole crowd
+    /// in a single frame.
+    private func armNextNukeTarget() {
+        while nextNukeIndex < lemmings.count {
+            let i = nextNukeIndex
+            nextNukeIndex += 1
+            guard lemmings[i].isAlive, lemmings[i].countdownTicks == 0 else { continue }
+            if case .ohNo = lemmings[i].state { continue }
+            lemmings[i].countdownTicks = bomberFuseTicks
+            return
+        }
     }
 
     private func spawn() {
@@ -188,6 +238,14 @@ final class GameEngine: ObservableObject {
         guard lem.isAlive else { return }
         let col = Int(lem.x.rounded())
 
+        if lem.countdownTicks > 0 {
+            lem.countdownTicks -= 1
+            if lem.countdownTicks == 0 {
+                lem.state = .ohNo(ticksLeft: ohNoTicks)
+                return
+            }
+        }
+
         if tile(lem.y, col) == .trap {
             lem.state = .dead
             deadCount += 1
@@ -201,6 +259,9 @@ final class GameEngine: ObservableObject {
 
         switch lem.state {
         case .falling:
+            lem.actionProgress += 1
+            guard lem.actionProgress >= fallTicksPerStep else { break }
+            lem.actionProgress = 0
             let below = lem.y + 1
             if isSolid(tile(below, col)) {
                 if lem.fallDistance > maxSafeFall && !lem.hasFloater {
@@ -213,10 +274,13 @@ final class GameEngine: ObservableObject {
             } else {
                 lem.y = below
                 lem.fallDistance += 1
-                lem.state = lem.hasFloater && lem.fallDistance > maxSafeFall ? .floating : .falling
+                lem.state = lem.hasFloater && lem.fallDistance > 1 ? .floating : .falling
             }
 
         case .floating:
+            lem.actionProgress += 1
+            guard lem.actionProgress >= floatTicksPerStep else { break }
+            lem.actionProgress = 0
             let below = lem.y + 1
             if isSolid(tile(below, col)) {
                 lem.state = .walking
@@ -304,14 +368,19 @@ final class GameEngine: ObservableObject {
             lem.actionProgress += 1
             guard lem.actionProgress >= walkTicksPerStep else { break }
             lem.actionProgress = 0
-            if tile(lem.y + 1, col) == .steel {
+            let below = tile(lem.y + 1, col)
+            if below == .steel || !isSolid(below) {
                 lem.state = .falling
+                lem.actionProgress = 0
             } else {
                 setTile(lem.y + 1, col, .empty)
                 lem.y += 1
             }
 
         case .climbing:
+            lem.actionProgress += 1
+            guard lem.actionProgress >= climbTicksPerStep else { break }
+            lem.actionProgress = 0
             let above = lem.y - 1
             if !isSolid(tile(above, col)) {
                 lem.y = above
@@ -323,21 +392,30 @@ final class GameEngine: ObservableObject {
                 lem.y = above
             }
 
-        case .exploding(let ticksLeft):
+        case .ohNo(let ticksLeft):
             if ticksLeft <= 0 {
-                for dr in -1...1 {
-                    for dc in -1...1 {
-                        setTile(lem.y + dr, col + dc, .empty)
-                    }
-                }
+                explode(atRow: lem.y, col: col)
                 lem.state = .dead
                 deadCount += 1
             } else {
-                lem.state = .exploding(ticksLeft: ticksLeft - 1)
+                lem.state = .ohNo(ticksLeft: ticksLeft - 1)
             }
 
         case .saved, .dead:
             break
+        }
+    }
+
+    /// Crater clears diggable ground only. Steel, exits and hatches stay,
+    /// matching LemmingsJS `clearGroundWithMask` (steel is not terrain).
+    private func explode(atRow row: Int, col: Int) {
+        for dr in -1...1 {
+            for dc in -1...1 {
+                let t = tile(row + dr, col + dc)
+                if t == .dirt || t == .trap {
+                    setTile(row + dr, col + dc, .empty)
+                }
+            }
         }
     }
 
@@ -355,6 +433,7 @@ final class GameEngine: ObservableObject {
         let below = lem.y + 1
         if !isSolid(tile(below, col)) {
             lem.state = .falling
+            lem.actionProgress = 0
             return
         }
 

@@ -53,7 +53,7 @@ enum LemState: Equatable {
     case miner
     case digger
     case floating
-    case exploding(ticksLeft: Int)
+    case ohNo(ticksLeft: Int)
     case saved
     case dead
 }
@@ -67,6 +67,10 @@ struct Lemming: Identifiable {
     var fallDistance: Int = 0
     var hasClimber: Bool = false
     var hasFloater: Bool = false
+    /// Parallel bomber fuse, like LemmingsJS `countdown` (starts at 80 ticks
+    /// there, ~5s here). The lemming keeps walking/working until the fuse
+    /// hits zero, then Oh No, then the crater.
+    var countdownTicks: Int = 0
     /// Ticks accumulated since the last walking/digging/bashing/mining/
     /// building step — these only advance one tile every
     /// `GameEngine.walkTicksPerStep`/`workTicksPerStep` ticks, matching the
@@ -76,6 +80,11 @@ struct Lemming: Identifiable {
     /// tunnel through it) and die in well under a second.
     var actionProgress: Int = 0
     var isAlive: Bool { state != .dead && state != .saved }
+    /// Digit 5...1 drawn above the head during the bomber fuse.
+    var countdownDigit: Int? {
+        guard countdownTicks > 0 else { return nil }
+        return max(1, (countdownTicks + 19) / 20)
+    }
 }
 
 /// Classic Lemmings difficulty tiers, used to group levels into packs.
@@ -102,6 +111,9 @@ struct LevelDefinition: Identifiable {
     let spawnIntervalTicks: Int
     let timeLimitSeconds: Int
     let skillCounts: [LemSkill: Int]
+    /// Classic release-rate floor (1-99). Mapped from `spawnIntervalTicks`
+    /// with the LemmingsJS formula interval = 104 - rate.
+    var minReleaseRate: Int { min(99, max(1, 104 - spawnIntervalTicks)) }
 
     var width: Int { rows.first?.count ?? 0 }
     var height: Int { rows.count }

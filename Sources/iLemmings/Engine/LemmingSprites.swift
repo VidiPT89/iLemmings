@@ -73,6 +73,21 @@ enum LemmingSprites {
         "........",
     ]
 
+    private static let floatFrame: [String] = [
+        "..6666..",
+        ".6....6.",
+        "..1111..",
+        ".111111.",
+        ".222222.",
+        ".2522252",
+        "..3333..",
+        ".333333.",
+        ".3.33.3.",
+        ".3.33.3.",
+        "44......",
+        "......44",
+    ]
+
     private static let blockFrame: [String] = [
         "..1111..",
         ".111111.",
@@ -95,6 +110,7 @@ enum LemmingSprites {
         case "3": return CGColor(red: 0.15, green: 0.45, blue: 0.85, alpha: 1) // overalls blue
         case "4": return CGColor(red: 0.08, green: 0.10, blue: 0.20, alpha: 1) // shoes/outline
         case "5": return CGColor(red: 0.05, green: 0.05, blue: 0.05, alpha: 1) // eye
+        case "6": return CGColor(red: 0.85, green: 0.78, blue: 0.20, alpha: 1) // umbrella
         default: return CGColor(red: 0, green: 0, blue: 0, alpha: 0)
         }
     }
@@ -138,6 +154,7 @@ enum LemmingSprites {
     static let stand: SKTexture = makeTexture(standFrame)
     static let climb: SKTexture = makeTexture(climbFrame)
     static let block: SKTexture = makeTexture(blockFrame)
+    static let float: SKTexture = makeTexture(floatFrame)
 
     static let walkAnimation: SKAction = .animate(with: [walk1, walk2], timePerFrame: 0.15)
 

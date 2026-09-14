@@ -148,56 +148,9 @@ final class GameScene: SKScene {
         CGFloat(engine.height - 1 - row) * tileSize
     }
 
-    private enum TerrainStyle: Hashable { case dirt, grassCap, steel, trap, exit }
-
-    /// Dirt capped by open air gets a grassy highlight, like the classic
-    /// hand-drawn hills — otherwise every level reads as flat brown blocks.
-    private func style(for tile: Tile, row: Int, col: Int) -> TerrainStyle? {
-        switch tile {
-        case .dirt:
-            let isCapped = engine.tile(row - 1, col) != .dirt && engine.tile(row - 1, col) != .steel
-            return isCapped ? .grassCap : .dirt
-        case .steel: return .steel
-        case .trap: return .trap
-        case .exit: return .exit
-        case .entrance: return nil // drawn as a dedicated hatch structure, see makeEntranceHatch()
-        case .empty: return nil
-        }
+    private func isTerrainSolid(_ tile: Tile) -> Bool {
+        tile == .dirt || tile == .steel
     }
-
-    /// A small speckled/dithered tile, generated once per style and reused —
-    /// gives the terrain a grainy, hand-pixelled feel instead of flat fills.
-    private static func speckleTexture(base: (CGFloat, CGFloat, CGFloat), variance: CGFloat, seed: Int) -> SKTexture {
-        let size = 16
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let ctx = CGContext(
-            data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
-            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return SKTexture() }
-        var rng = SeededGenerator(seed: seed)
-        for y in 0..<size {
-            for x in 0..<size {
-                let n = CGFloat.random(in: -variance...variance, using: &rng)
-                let r = min(max(base.0 + n, 0), 1)
-                let g = min(max(base.1 + n, 0), 1)
-                let b = min(max(base.2 + n, 0), 1)
-                ctx.setFillColor(CGColor(red: r, green: g, blue: b, alpha: 1))
-                ctx.fill(CGRect(x: x, y: y, width: 1, height: 1))
-            }
-        }
-        guard let image = ctx.makeImage() else { return SKTexture() }
-        let texture = SKTexture(cgImage: image)
-        texture.filteringMode = .nearest
-        return texture
-    }
-
-    private static let terrainTextures: [TerrainStyle: SKTexture] = [
-        .dirt: speckleTexture(base: (0.42, 0.24, 0.06), variance: 0.05, seed: 1),
-        .grassCap: speckleTexture(base: (0.28, 0.46, 0.16), variance: 0.05, seed: 2),
-        .steel: speckleTexture(base: (0.30, 0.30, 0.32), variance: 0.04, seed: 3),
-        .trap: speckleTexture(base: (0.55, 0.07, 0.05), variance: 0.06, seed: 4),
-        .exit: speckleTexture(base: (0.70, 0.55, 0.10), variance: 0.05, seed: 5),
-    ]
 
     /// The classic hatch: a distinct metal doorway lemmings visibly walk out
     /// of, not just a same-as-terrain speckled tile. Previously the entrance
@@ -249,7 +202,12 @@ final class GameScene: SKScene {
         for r in 0..<engine.height {
             for c in 0..<engine.width where engine.tile(r, c) != lastGrid[r][c] {
                 cellsToRefresh.insert(r * engine.width + c)
-                if r + 1 < engine.height { cellsToRefresh.insert((r + 1) * engine.width + c) }
+                for (dr, dc) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+                    let nr = r + dr, nc = c + dc
+                    if nr >= 0, nr < engine.height, nc >= 0, nc < engine.width {
+                        cellsToRefresh.insert(nr * engine.width + nc)
+                    }
+                }
             }
         }
 
@@ -258,23 +216,26 @@ final class GameScene: SKScene {
             let c = key % engine.width
             let tile = engine.tile(r, c)
 
-            guard let terrainStyle = style(for: tile, row: r, col: c),
-                  let texture = Self.terrainTextures[terrainStyle] else {
+            guard let terrainStyle = TerrainRenderer.style(for: tile, above: engine.tile(r - 1, c)) else {
                 terrainNodes[key]?.removeFromParent()
                 terrainNodes.removeValue(forKey: key)
                 continue
             }
+
+            let texture = TerrainRenderer.texture(
+                style: terrainStyle,
+                solidN: isTerrainSolid(engine.tile(r - 1, c)),
+                solidE: isTerrainSolid(engine.tile(r, c + 1)),
+                solidS: isTerrainSolid(engine.tile(r + 1, c)),
+                solidW: isTerrainSolid(engine.tile(r, c - 1)),
+                seed: r * 97 + c * 13 + terrainStyle.hashValue
+            )
 
             if let existing = terrainNodes[key] {
                 existing.texture = texture
             } else {
                 let node = SKSpriteNode(texture: texture, size: CGSize(width: tileSize, height: tileSize))
                 node.position = CGPoint(x: CGFloat(c) * tileSize + tileSize / 2, y: flipRow(r) + tileSize / 2)
-                if tile == .exit {
-                    node.run(.repeatForever(.sequence([
-                        .scale(to: 1.15, duration: 0.5), .scale(to: 1.0, duration: 0.5),
-                    ])))
-                }
                 terrainNode.addChild(node)
                 terrainNodes[key] = node
             }
@@ -298,8 +259,10 @@ final class GameScene: SKScene {
         let step = 1.0 / engine.ticksPerSecond
         var ticked = false
         while accumulator >= step {
-            engine.tick()
-            tickCounter += 1
+            for _ in 0..<max(1, engine.gameSpeed) {
+                engine.tick()
+                tickCounter += 1
+            }
             ticked = true
             accumulator -= step
         }
@@ -316,7 +279,8 @@ final class GameScene: SKScene {
             if node.parent == nil { addChild(node) }
 
             let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y))
-            node.run(.move(to: target, duration: 1.0 / engine.ticksPerSecond))
+            let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
+            node.run(.move(to: target, duration: moveDuration))
             node.isHidden = !lem.isAlive
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
@@ -332,14 +296,15 @@ final class GameScene: SKScene {
     }
 
     private func emitParticles(for lem: Lemming, at position: CGPoint) {
-        let wasExploding: Bool
-        if case .exploding = previousStates[lem.id] ?? lem.state { wasExploding = true } else { wasExploding = false }
+        let previous = previousStates[lem.id] ?? lem.state
+        let wasOhNo: Bool
+        if case .ohNo = previous { wasOhNo = true } else { wasOhNo = false }
 
         switch lem.state {
         case .basher, .miner, .digger:
             if tickCounter % 4 == 0 { addParticles(kind: .dust, at: position) }
         case .dead:
-            if wasExploding {
+            if wasOhNo {
                 addParticles(kind: .explosion, at: position)
                 onExplosion?()
             }
@@ -416,6 +381,15 @@ final class GameScene: SKScene {
         badge.isHidden = true
         node.addChild(badge)
 
+        let countLabel = SKLabelNode(fontNamed: "Menlo-Bold")
+        countLabel.name = "countdown"
+        countLabel.fontSize = 10
+        countLabel.fontColor = SKColor(red: 0.35, green: 0.95, blue: 0.35, alpha: 1)
+        countLabel.verticalAlignmentMode = .center
+        countLabel.position = CGPoint(x: 0, y: node.size.height + 8)
+        countLabel.zPosition = 2
+        node.addChild(countLabel)
+
         return node
     }
 
@@ -425,6 +399,14 @@ final class GameScene: SKScene {
     private func updateAppearance(_ node: SKSpriteNode, for lem: Lemming) {
         let badge = node.childNode(withName: "badge") as? SKShapeNode
         badge?.isHidden = true
+        let countLabel = node.childNode(withName: "countdown") as? SKLabelNode
+        if let digit = lem.countdownDigit {
+            countLabel?.text = "\(digit)"
+            countLabel?.isHidden = false
+        } else {
+            countLabel?.text = ""
+            countLabel?.isHidden = true
+        }
 
         switch lem.state {
         case .walking:
@@ -455,7 +437,7 @@ final class GameScene: SKScene {
             badge?.isHidden = false
             badge?.fillColor = .brown
 
-        case .exploding:
+        case .ohNo:
             node.removeAction(forKey: "walk")
             node.texture = LemmingSprites.stand
             badge?.isHidden = false
@@ -463,9 +445,7 @@ final class GameScene: SKScene {
 
         case .floating:
             node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            badge?.isHidden = false
-            badge?.fillColor = .cyan
+            node.texture = LemmingSprites.float
 
         case .falling, .saved, .dead:
             node.removeAction(forKey: "walk")
