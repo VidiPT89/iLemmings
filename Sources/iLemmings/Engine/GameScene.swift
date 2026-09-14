@@ -321,7 +321,7 @@ final class GameScene: SKScene {
             let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y))
             let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
             node.run(.move(to: target, duration: moveDuration))
-            node.isHidden = !lem.isAlive
+            node.isHidden = (lem.state == .dead)
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
             updateAppearance(node, for: lem)
