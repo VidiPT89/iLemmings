@@ -30,41 +30,40 @@ struct GameView: View {
         ZStack {
             Color.brandBlack.ignoresSafeArea()
 
-            GeometryReader { proxy in
-                SpriteView(scene: scene)
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-            .onAppear { scene.resizeViewport(to: proxy.size) }
-            .onChange(of: proxy.size) { _, newSize in scene.resizeViewport(to: newSize) }
-            .focusable()
-            .onKeyPress(.space) {
-                isPaused.toggle()
-                return .handled
-            }
-            .onKeyPress("f") {
-                engine.toggleFastForward()
-                return .handled
-            }
-            .onKeyPress("-") {
-                engine.changeReleaseRate(-1)
-                return .handled
-            }
-            .onKeyPress("=") {
-                engine.changeReleaseRate(1)
-                return .handled
-            }
-            .onKeyPress("1") { engine.selectSkill(.climber); return .handled }
-            .onKeyPress("2") { engine.selectSkill(.floater); return .handled }
-            .onKeyPress("3") { engine.selectSkill(.bomber); return .handled }
-            .onKeyPress("4") { engine.selectSkill(.blocker); return .handled }
-            .onKeyPress("5") { engine.selectSkill(.builder); return .handled }
-            .onKeyPress("6") { engine.selectSkill(.basher); return .handled }
-            .onKeyPress("7") { engine.selectSkill(.miner); return .handled }
-            .onKeyPress("8") { engine.selectSkill(.digger); return .handled }
-            }
-            .ignoresSafeArea()
+            VStack(spacing: 0) {
+                MiniMapStrip(engine: engine)
+                GeometryReader { proxy in
+                    SpriteView(scene: scene)
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .onAppear { scene.resizeViewport(to: proxy.size) }
+                        .onChange(of: proxy.size) { _, newSize in scene.resizeViewport(to: newSize) }
+                }
+                .focusable()
+                .onKeyPress(.space) {
+                    isPaused.toggle()
+                    return .handled
+                }
+                .onKeyPress("f") {
+                    engine.toggleFastForward()
+                    return .handled
+                }
+                .onKeyPress("-") {
+                    engine.changeReleaseRate(-1)
+                    return .handled
+                }
+                .onKeyPress("=") {
+                    engine.changeReleaseRate(1)
+                    return .handled
+                }
+                .onKeyPress("1") { engine.selectSkill(.climber); return .handled }
+                .onKeyPress("2") { engine.selectSkill(.floater); return .handled }
+                .onKeyPress("3") { engine.selectSkill(.bomber); return .handled }
+                .onKeyPress("4") { engine.selectSkill(.blocker); return .handled }
+                .onKeyPress("5") { engine.selectSkill(.builder); return .handled }
+                .onKeyPress("6") { engine.selectSkill(.basher); return .handled }
+                .onKeyPress("7") { engine.selectSkill(.miner); return .handled }
+                .onKeyPress("8") { engine.selectSkill(.digger); return .handled }
 
-            VStack {
-                Spacer()
                 BottomControlPanel(engine: engine, isPaused: $isPaused)
             }
 
@@ -143,6 +142,41 @@ struct GameView: View {
 /// The bright green "LCD"/dot-matrix look of the original counters
 /// (OUT / IN / TIME), instead of a brand-colored UI font.
 private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
+
+private struct MiniMapStrip: View {
+    @ObservedObject var engine: GameEngine
+
+    var body: some View {
+        Canvas { context, size in
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
+            let cw = size.width / CGFloat(max(engine.width, 1))
+            let ch = size.height / CGFloat(max(engine.height, 1))
+            for r in 0..<engine.height {
+                for c in 0..<engine.width {
+                    let color: Color?
+                    switch engine.tile(r, c) {
+                    case .dirt: color = Color(red: 0.45, green: 0.28, blue: 0.08)
+                    case .steel: color = Color(red: 0.55, green: 0.55, blue: 0.6)
+                    case .trap: color = Color(red: 0.8, green: 0.12, blue: 0.1)
+                    case .exit: color = Color(red: 1, green: 0.85, blue: 0.2)
+                    case .entrance: color = Color(red: 0.2, green: 0.9, blue: 0.3)
+                    case .empty: color = nil
+                    }
+                    guard let color else { continue }
+                    let rect = CGRect(
+                        x: CGFloat(c) * cw,
+                        y: CGFloat(r) * ch,
+                        width: max(1, cw),
+                        height: max(1, ch)
+                    )
+                    context.fill(Path(rect), with: .color(color))
+                }
+            }
+        }
+        .frame(height: 28)
+        .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
+    }
+}
 
 /// A dithered/stippled brown-tan tile, like the original's skill button
 /// background (verified against an actual screenshot of the original) — a

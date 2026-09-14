@@ -22,18 +22,8 @@ final class GameScene: SKScene {
     /// instead of squeezing the whole level into the screen and making every
     /// lemming a few pixels tall.
     private let visibleTilesWide: CGFloat = 15
-    private let minZoom: CGFloat = 0.25
-    private let maxZoom: CGFloat = 3.0
-    /// Fitting the level height exactly makes on-screen tile size just
-    /// `screenHeight / level.height`, with zero margin — on a tall window
-    /// this made every tile (and the lemming sprites, sized relative to it)
-    /// render huge, since nothing else scales it down. The original ran at
-    /// 320x200 with roughly 8px lemmings — tiny relative to the screen, with
-    /// a wide margin of visible terrain above/below the play area. 1.35 was
-    /// a first pass and still read as oversized; this shows noticeably more
-    /// sky/ground margin, shrinking tiles and lemmings by the same ratio to
-    /// land much closer to how small the original actually was.
-    private let heightFitPadding: CGFloat = 2.2
+    private let minZoom: CGFloat = 0.15
+    private let maxZoom: CGFloat = 4.0
 
     private var terrainNode = SKNode()
     /// One optional node per cell, keyed by `row * width + col`. Updated
@@ -60,7 +50,6 @@ final class GameScene: SKScene {
     var onSplat: (() -> Void)?
     private var lastPointer: CGPoint?
     private var hoverRing = SKShapeNode(circleOfRadius: 10)
-    private var miniMapNode: SKSpriteNode?
 
     init(engine: GameEngine) {
         self.engine = engine
@@ -92,9 +81,15 @@ final class GameScene: SKScene {
 
         camera = gameCamera
         addChild(gameCamera)
-        gameCamera.addChild(makeMiniMap())
+        hoverRing.strokeColor = SKColor(red: 1, green: 0.85, blue: 0.2, alpha: 0.9)
+        hoverRing.fillColor = .clear
+        hoverRing.lineWidth = 1.5
+        hoverRing.zPosition = 12
+        hoverRing.isHidden = true
+        addChild(hoverRing)
         let startX = CGFloat(engine.entranceColumn) * tileSize
         gameCamera.position = CGPoint(x: clampedCameraX(startX), y: worldHeight / 2)
+        resizeViewport(to: view.bounds.size)
         #if os(macOS)
         view.window?.acceptsMouseMovedEvents = true
         #endif
@@ -112,11 +107,13 @@ final class GameScene: SKScene {
     func resizeViewport(to newSize: CGSize) {
         guard newSize.width > 0, newSize.height > 0 else { return }
         size = newSize
-        let fitHeightScale = worldHeight * heightFitPadding / newSize.height
+        // Camera scale is inverted: 2 shows twice as much scene. Fit the
+        // full level height into the SpriteView (which is now only the
+        // playfield, not the whole window).
+        let fitHeightScale = worldHeight / newSize.height
         gameCamera.setScale(min(max(fitHeightScale, minZoom), maxZoom))
         gameCamera.position.y = worldHeight / 2
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
-        miniMapNode?.position = CGPoint(x: 0, y: size.height * gameCamera.xScale / 2 - 6)
     }
 
     // MARK: - Camera: horizontal scroll only
@@ -231,21 +228,6 @@ final class GameScene: SKScene {
         return node
     }
 
-    private func makeMiniMap() -> SKSpriteNode {
-        let node = SKSpriteNode(color: .black, size: CGSize(width: 220, height: 28))
-        node.zPosition = 50
-        node.name = "minimap"
-        node.anchorPoint = CGPoint(x: 0.5, y: 1)
-        miniMapNode = node
-        hoverRing.strokeColor = SKColor(red: 1, green: 0.85, blue: 0.2, alpha: 0.9)
-        hoverRing.fillColor = .clear
-        hoverRing.lineWidth = 1.5
-        hoverRing.zPosition = 12
-        hoverRing.isHidden = true
-        addChild(hoverRing)
-        return node
-    }
-
     /// Only touches the cells that actually changed since last frame —
     /// digging/bashing/mining edit one or two tiles per tick, so rebuilding
     /// the entire grid's shape nodes every time was wasted work that caused
@@ -322,7 +304,7 @@ final class GameScene: SKScene {
             ticked = true
             accumulator -= step
         }
-        if ticked { updateTerrain(); refreshMiniMap() }
+        if ticked { updateTerrain() }
         syncLemmingNodes()
         edgeScroll()
         updateHover()
@@ -634,49 +616,5 @@ final class GameScene: SKScene {
         }
         hoverRing.isHidden = false
         hoverRing.position = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.7)
-    }
-
-    private func refreshMiniMap() {
-        guard let node = miniMapNode else { return }
-        let w = 220, h = 28
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let ctx = CGContext(
-            data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
-            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return }
-        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
-        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
-        for r in 0..<engine.height {
-            for c in 0..<engine.width {
-                let t = engine.tile(r, c)
-                let color: CGColor?
-                switch t {
-                case .dirt: color = CGColor(red: 0.45, green: 0.28, blue: 0.08, alpha: 1)
-                case .steel: color = CGColor(red: 0.55, green: 0.55, blue: 0.6, alpha: 1)
-                case .trap: color = CGColor(red: 0.8, green: 0.1, blue: 0.1, alpha: 1)
-                case .exit: color = CGColor(red: 1, green: 0.85, blue: 0.2, alpha: 1)
-                case .entrance: color = CGColor(red: 0.2, green: 0.9, blue: 0.3, alpha: 1)
-                case .empty: color = nil
-                }
-                guard let color else { continue }
-                ctx.setFillColor(color)
-                let x = c * w / max(engine.width, 1)
-                let y = (engine.height - 1 - r) * h / max(engine.height, 1)
-                let cw = max(1, w / max(engine.width, 1))
-                let ch = max(1, h / max(engine.height, 1))
-                ctx.fill(CGRect(x: x, y: y, width: cw, height: ch))
-            }
-        }
-        let half = size.width * gameCamera.xScale / 2
-        let viewW = worldWidth > 0 ? (half * 2 / worldWidth) * CGFloat(w) : 0
-        let viewX = worldWidth > 0 ? (gameCamera.position.x - half) / worldWidth * CGFloat(w) : 0
-        ctx.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.85))
-        ctx.setLineWidth(1)
-        ctx.stroke(CGRect(x: viewX, y: 1, width: max(4, viewW), height: CGFloat(h - 2)))
-        guard let image = ctx.makeImage() else { return }
-        let tex = SKTexture(cgImage: image)
-        tex.filteringMode = .nearest
-        node.texture = tex
-        node.size = CGSize(width: 220, height: 28)
     }
 }

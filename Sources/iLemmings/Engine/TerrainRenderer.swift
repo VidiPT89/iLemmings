@@ -47,11 +47,16 @@ enum TerrainRenderer {
                 if !isFilled(x: x, y: y, size: size, n: solidN, e: solidE, s: solidS, w: solidW, steel: style == .steel) {
                     continue
                 }
+                let grassLine = Int(Double(size) * 0.72)
+                let useGrass = style == .grassCap && y >= grassLine
+                let baseCol = useGrass
+                    ? (0.26, 0.48, 0.14)
+                    : base
                 let n = CGFloat.random(in: -variance...variance, using: &rng)
                 ctx.setFillColor(CGColor(
-                    red: min(max(base.0 + n, 0), 1),
-                    green: min(max(base.1 + n, 0), 1),
-                    blue: min(max(base.2 + n, 0), 1),
+                    red: min(max(baseCol.0 + n, 0), 1),
+                    green: min(max(baseCol.1 + n, 0), 1),
+                    blue: min(max(baseCol.2 + n, 0), 1),
                     alpha: 1
                 ))
                 ctx.fill(CGRect(x: x, y: y, width: 1, height: 1))
