@@ -4,7 +4,7 @@ import SpriteKit
 /// chessboard. Physics stay on the grid; only the pixels of each cell change.
 enum TerrainRenderer {
 
-    enum Style: Hashable { case dirt, grassCap, steel, trap, exit }
+    enum Style: Hashable { case dirt, grassCap, steel, trap }
 
     static func style(for tile: Tile, above: Tile) -> Style? {
         switch tile {
@@ -13,8 +13,7 @@ enum TerrainRenderer {
             return isCapped ? .grassCap : .dirt
         case .steel: return .steel
         case .trap: return .trap
-        case .exit: return .exit
-        case .entrance, .empty: return nil
+        case .exit, .entrance, .empty: return nil
         }
     }
 
@@ -41,7 +40,6 @@ enum TerrainRenderer {
         case .grassCap: base = (0.26, 0.48, 0.14); variance = 0.08
         case .steel: base = (0.38, 0.40, 0.44); variance = 0.04
         case .trap: base = (0.55, 0.07, 0.05); variance = 0.06
-        case .exit: base = (0.78, 0.62, 0.12); variance = 0.05
         }
 
         for y in 0..<size {

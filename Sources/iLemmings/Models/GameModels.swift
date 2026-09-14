@@ -53,6 +53,8 @@ enum LemState: Equatable {
     case miner
     case digger
     case floating
+    case shrugging(ticksLeft: Int)
+    case splatting(ticksLeft: Int)
     case ohNo(ticksLeft: Int)
     case saved
     case dead
@@ -80,6 +82,12 @@ struct Lemming: Identifiable {
     /// tunnel through it) and die in well under a second.
     var actionProgress: Int = 0
     var isAlive: Bool { state != .dead && state != .saved }
+    var canReceiveSkill: Bool {
+        switch state {
+        case .dead, .saved, .splatting, .ohNo: return false
+        default: return true
+        }
+    }
     /// Digit 5...1 drawn above the head during the bomber fuse.
     var countdownDigit: Int? {
         guard countdownTicks > 0 else { return nil }

@@ -33,8 +33,33 @@ struct GameView: View {
             GeometryReader { proxy in
                 SpriteView(scene: scene)
                     .frame(width: proxy.size.width, height: proxy.size.height)
-                    .onAppear { scene.resizeViewport(to: proxy.size) }
-                    .onChange(of: proxy.size) { _, newSize in scene.resizeViewport(to: newSize) }
+            .onAppear { scene.resizeViewport(to: proxy.size) }
+            .onChange(of: proxy.size) { _, newSize in scene.resizeViewport(to: newSize) }
+            .focusable()
+            .onKeyPress(.space) {
+                isPaused.toggle()
+                return .handled
+            }
+            .onKeyPress("f") {
+                engine.toggleFastForward()
+                return .handled
+            }
+            .onKeyPress("-") {
+                engine.changeReleaseRate(-1)
+                return .handled
+            }
+            .onKeyPress("=") {
+                engine.changeReleaseRate(1)
+                return .handled
+            }
+            .onKeyPress("1") { engine.selectSkill(.climber); return .handled }
+            .onKeyPress("2") { engine.selectSkill(.floater); return .handled }
+            .onKeyPress("3") { engine.selectSkill(.bomber); return .handled }
+            .onKeyPress("4") { engine.selectSkill(.blocker); return .handled }
+            .onKeyPress("5") { engine.selectSkill(.builder); return .handled }
+            .onKeyPress("6") { engine.selectSkill(.basher); return .handled }
+            .onKeyPress("7") { engine.selectSkill(.miner); return .handled }
+            .onKeyPress("8") { engine.selectSkill(.digger); return .handled }
             }
             .ignoresSafeArea()
 
@@ -82,6 +107,7 @@ struct GameView: View {
         .onAppear {
             scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
             scene.onExplosion = { sound.play(.explode) }
+            scene.onSplat = { sound.play(.splat) }
         }
         .sheet(isPresented: $showResult) {
             ResultView(
@@ -106,6 +132,7 @@ struct GameView: View {
         scene = GameScene(engine: engine)
         scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
         scene.onExplosion = { sound.play(.explode) }
+        scene.onSplat = { sound.play(.splat) }
         isPaused = false
         showResult = false
         earnedStars = 0
