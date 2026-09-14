@@ -157,11 +157,20 @@ private struct BottomControlPanel: View {
 
     var body: some View {
         HStack(spacing: 2) {
+            ControlButton(systemImage: "minus") { engine.changeReleaseRate(-1) }
+            Text("\(engine.releaseRate)")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundStyle(lcdGreen)
+                .frame(width: 22)
+            ControlButton(systemImage: "plus") { engine.changeReleaseRate(1) }
             ForEach(LemSkill.allCases) { skill in
                 SkillButton(skill: skill, engine: engine)
             }
             ControlButton(systemImage: "pause.fill") { isPaused = true }
             ControlButton(systemImage: "flame.fill") { showNukeConfirm = true }
+            ControlButton(systemImage: engine.gameSpeed == 1 ? "forward.fill" : "forward.end.fill") {
+                engine.toggleFastForward()
+            }
             ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
                 sound.isMuted.toggle()
             }
@@ -176,10 +185,14 @@ private struct BottomControlPanel: View {
     }
 
     private var statsRow: some View {
-        HStack(spacing: 10) {
-            statCell(loc.string(.hudLemmingsOut), "\(engine.spawnedCount - engine.savedCount - engine.deadCount)")
-            statCell(loc.string(.hudLemmingsSaved), "\(engine.savedCount)/\(engine.level.neededToSave)", animated: true)
-            statCell(loc.string(.hudTimeLeft), timeString(engine.secondsRemaining))
+        let out = engine.spawnedCount - engine.savedCount - engine.deadCount
+        let inPercent = engine.level.totalLemmings == 0
+            ? 0
+            : Int((Double(engine.savedCount) / Double(engine.level.totalLemmings) * 100).rounded())
+        return HStack(spacing: 10) {
+            statCell("OUT", "\(out)")
+            statCell("IN", "\(inPercent)%", animated: true)
+            statCell("TIME", timeString(engine.secondsRemaining))
         }
         .foregroundStyle(lcdGreen)
         .padding(.trailing, 12)
@@ -197,7 +210,7 @@ private struct BottomControlPanel: View {
 
     private func timeString(_ seconds: Int) -> String {
         let s = max(0, seconds)
-        return String(format: "%d:%02d", s / 60, s % 60)
+        return String(format: "%d-%02d", s / 60, s % 60)
     }
 }
 
@@ -226,6 +239,7 @@ private struct ControlButton: View {
 private struct SkillButton: View {
     let skill: LemSkill
     @ObservedObject var engine: GameEngine
+    @EnvironmentObject var loc: LocalizationManager
 
     var body: some View {
         let count = engine.skillInventory[skill] ?? 0
@@ -252,6 +266,8 @@ private struct SkillButton: View {
         .buttonStyle(.plain)
         .disabled(count == 0)
         .opacity(count == 0 ? 0.35 : 1)
+        .accessibilityLabel(loc.string(skill.locKey))
+        .accessibilityValue("\(count)")
     }
 }
 

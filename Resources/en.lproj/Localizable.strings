@@ -13,10 +13,7 @@
 "settingsSound" = "Sound";
 "settingsClose" = "Done";
 "levelsTitle" = "Levels";
-"hudLemmingsOut" = "Out";
-"hudLemmingsSaved" = "Saved";
 "hudLemmingsNeeded" = "Needed";
-"hudTimeLeft" = "Time";
 "skillClimber" = "Climber";
 "skillFloater" = "Floater";
 "skillBomber" = "Bomber";

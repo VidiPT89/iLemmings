@@ -17,6 +17,7 @@
 		22C84F8552F305EB0CA15E32 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB882F0F3A8A48597A09FEEE /* GameView.swift */; };
 		3B6647F2B2C32D51444E3791 /* StarsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FD5D3F7FB82BBDCEBC9361 /* StarsStore.swift */; };
 		3BC032F23A0CF0F9B341CAE7 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67132860345F486CAE02F9E2 /* MainMenuView.swift */; };
+		475FA7C2E37E979D3181E808 /* TerrainRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9787E22024B956B739D0842E /* TerrainRenderer.swift */; };
 		47A0291B2465D7FC6DAE8FB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2D221E35BED815EC0C560C4D /* Assets.xcassets */; };
 		4DA3257C17389C9C953343EB /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399F887D08D21EA2A6E4C9E7 /* Haptics.swift */; };
 		4FEFC0D42257A626AD736EA5 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A41C4B9449FCC3371D5B11 /* GameScene.swift */; };
@@ -48,6 +49,7 @@
 		E0F12AE42FFF0E4D2E3257A9 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5940BA15B29555D96D180 /* Localization.swift */; };
 		E79094F3725ACE2DB077CC17 /* DecorativeWalkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */; };
 		EEF2F9CA3B3AC2ED3CEF14C8 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB882F0F3A8A48597A09FEEE /* GameView.swift */; };
+		F6660B99D0707CF687AC63E5 /* TerrainRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9787E22024B956B739D0842E /* TerrainRenderer.swift */; };
 		FEFAF23C4EAD3C6C00E82D11 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD79BDF8059440FC9C9FA31C /* ConfettiView.swift */; };
 /* End PBXBuildFile section */
 
@@ -58,7 +60,7 @@
 		37C9C057E9060F013AECFB63 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		399F887D08D21EA2A6E4C9E7 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		5154F090593B38285B43ADDA /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		540A907878A3A9BDA26E89FE /* iLemmings.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iLemmings.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iLemmings-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		62DF52C845673D13BE6FFF44 /* LevelData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelData.swift; sourceTree = "<group>"; };
 		67132860345F486CAE02F9E2 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LemmingSprites.swift; sourceTree = "<group>"; };
@@ -66,12 +68,13 @@
 		7277F96E7B7AFC6E877AE558 /* GameModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModels.swift; sourceTree = "<group>"; };
 		7C661FB392028D7C8129085A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		95B90F269DF86295BD3E9E7B /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		9787E22024B956B739D0842E /* TerrainRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerrainRenderer.swift; sourceTree = "<group>"; };
 		97C6EEF247C0D16478DC95F9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A0FD5D3F7FB82BBDCEBC9361 /* StarsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarsStore.swift; sourceTree = "<group>"; };
 		A10FBBD82F805B8A69BFBA31 /* pt-PT */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-PT"; path = "pt-PT.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		AFC366BF1A39BEDCA5B54107 /* DecorativeWalkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecorativeWalkersView.swift; sourceTree = "<group>"; };
 		B8B48E805C717F3D2CD62A1F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
-		CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; name = "iLemmings-iOS.app"; path = iLemmings.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "iLemmings-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB5838A1FC214F70D39A567C /* iLemmingsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iLemmingsApp.swift; sourceTree = "<group>"; };
 		CB882F0F3A8A48597A09FEEE /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		E9A41C4B9449FCC3371D5B11 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
@@ -102,6 +105,7 @@
 				710B23ED1A842DE5FF073F41 /* GameEngine.swift */,
 				E9A41C4B9449FCC3371D5B11 /* GameScene.swift */,
 				6F1F62B33DC8FC9019E89F07 /* LemmingSprites.swift */,
+				9787E22024B956B739D0842E /* TerrainRenderer.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -127,7 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				CB4C9D650653BF248A7DEDCB /* iLemmings-iOS.app */,
-				540A907878A3A9BDA26E89FE /* iLemmings.app */,
+				540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -241,7 +245,7 @@
 			packageProductDependencies = (
 			);
 			productName = "iLemmings-macOS";
-			productReference = 540A907878A3A9BDA26E89FE /* iLemmings.app */;
+			productReference = 540A907878A3A9BDA26E89FE /* iLemmings-macOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -252,6 +256,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 51C0D68FFBCE7F35AC017264 /* Build configuration list for PBXProject "iLemmings" */;
 			developmentRegion = en;
@@ -317,6 +323,7 @@
 				AD5601DEA15347D8A2642A29 /* SoundManager.swift in Sources */,
 				74C27C6C8020AB1454DE9668 /* SplashView.swift in Sources */,
 				1219DC150AE68B1D075FB3AB /* StarsStore.swift in Sources */,
+				475FA7C2E37E979D3181E808 /* TerrainRenderer.swift in Sources */,
 				20E41CAFBB0CDCC5BDBB6650 /* Theme.swift in Sources */,
 				549827C2B0616BF9270CBAA8 /* iLemmingsApp.swift in Sources */,
 			);
@@ -343,6 +350,7 @@
 				B72AA4DC1ED04BF3E1C84585 /* SoundManager.swift in Sources */,
 				7E853A7585E4929E762DECD3 /* SplashView.swift in Sources */,
 				3B6647F2B2C32D51444E3791 /* StarsStore.swift in Sources */,
+				F6660B99D0707CF687AC63E5 /* TerrainRenderer.swift in Sources */,
 				94EAF561112D3FEA02B49F50 /* Theme.swift in Sources */,
 				1BC900F38F20D87247EDFAB0 /* iLemmingsApp.swift in Sources */,
 			);
@@ -453,7 +461,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = S769436W24;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = "Sources/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -531,7 +538,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = S769436W24;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = "Sources/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (

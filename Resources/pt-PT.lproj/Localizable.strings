@@ -13,10 +13,7 @@
 "settingsSound" = "Som";
 "settingsClose" = "Concluído";
 "levelsTitle" = "Níveis";
-"hudLemmingsOut" = "No terreno";
-"hudLemmingsSaved" = "Salvos";
 "hudLemmingsNeeded" = "Necessários";
-"hudTimeLeft" = "Tempo";
 "skillClimber" = "Escalador";
 "skillFloater" = "Paraquedas";
 "skillBomber" = "Explosivo";
