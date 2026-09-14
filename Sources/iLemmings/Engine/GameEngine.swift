@@ -122,7 +122,7 @@ final class GameEngine: ObservableObject {
               let idx = lemmings.firstIndex(where: { $0.id == lemmingID }),
               (skillInventory[skill] ?? 0) > 0 else { return }
         var lem = lemmings[idx]
-        guard lem.isAlive else { return }
+        guard lem.canReceiveSkill else { return }
 
         switch skill {
         case .climber:
@@ -246,9 +246,17 @@ final class GameEngine: ObservableObject {
             }
         }
 
+        if case .splatting(let ticksLeft) = lem.state {
+            lem.state = ticksLeft <= 0 ? .dead : .splatting(ticksLeft: ticksLeft - 1)
+            return
+        }
+        if case .shrugging(let ticksLeft) = lem.state {
+            lem.state = ticksLeft <= 0 ? .walking : .shrugging(ticksLeft: ticksLeft - 1)
+            return
+        }
+
         if tile(lem.y, col) == .trap {
-            lem.state = .dead
-            deadCount += 1
+            splat(&lem)
             return
         }
         if tile(lem.y, col) == .exit {
@@ -265,8 +273,7 @@ final class GameEngine: ObservableObject {
             let below = lem.y + 1
             if isSolid(tile(below, col)) {
                 if lem.fallDistance > maxSafeFall && !lem.hasFloater {
-                    lem.state = .dead
-                    deadCount += 1
+                    splat(&lem)
                 } else {
                     lem.state = .walking
                     lem.fallDistance = 0
@@ -318,14 +325,11 @@ final class GameEngine: ObservableObject {
             // over nothing until it fell. Moving a full tile every step
             // keeps brick and position locked together, every step.
             if steps <= 0 {
-                lem.state = .walking
+                lem.state = .shrugging(ticksLeft: 16)
             } else if lem.y - 1 < 0 {
-                // No room left to climb — stop instead of continuing to
-                // advance with no ground underneath.
-                lem.state = .walking
+                lem.state = .shrugging(ticksLeft: 16)
             } else if isSolid(tile(lem.y - 1, frontCol)) {
-                // Blocked by a real wall/steel ahead — the original stops the builder here.
-                lem.state = .walking
+                lem.state = .shrugging(ticksLeft: 16)
             } else {
                 setTile(lem.y, frontCol, .dirt)
                 lem.y -= 1
@@ -401,9 +405,17 @@ final class GameEngine: ObservableObject {
                 lem.state = .ohNo(ticksLeft: ticksLeft - 1)
             }
 
-        case .saved, .dead:
+        case .shrugging, .splatting, .saved, .dead:
             break
         }
+    }
+
+    private func splat(_ lem: inout Lemming) {
+        guard lem.isAlive else { return }
+        if case .splatting = lem.state { return }
+        lem.state = .splatting(ticksLeft: 16)
+        lem.countdownTicks = 0
+        deadCount += 1
     }
 
     /// Crater clears diggable ground only. Steel, exits and hatches stay,

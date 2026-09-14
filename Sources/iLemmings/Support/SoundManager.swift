@@ -2,21 +2,16 @@ import AVFoundation
 import SwiftUI
 
 /// Short, synthesized sound effects (no external audio assets required).
-/// Kept intentionally simple: a handful of sine/square beeps for feedback,
-/// not a composed soundtrack — see project notes for that limitation.
 final class SoundManager: ObservableObject {
     @AppStorage("isMuted") var isMuted: Bool = false
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private var started = false
-    /// Mono format shared by the node connection and every generated buffer —
-    /// a mismatch here is what was crashing scheduleBuffer with
-    /// "_outputFormat.channelCount == buffer.format.channelCount".
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
 
     enum Effect {
-        case select, assign, win, lose, explode
+        case select, assign, win, lose, explode, splat
 
         var frequency: Double {
             switch self {
@@ -25,6 +20,7 @@ final class SoundManager: ObservableObject {
             case .win: return 990
             case .lose: return 220
             case .explode: return 110
+            case .splat: return 90
             }
         }
 
@@ -33,6 +29,7 @@ final class SoundManager: ObservableObject {
             case .win: return 0.35
             case .lose: return 0.4
             case .explode: return 0.25
+            case .splat: return 0.18
             default: return 0.08
             }
         }
@@ -70,7 +67,7 @@ final class SoundManager: ObservableObject {
 
         for frame in 0..<Int(frameCount) {
             let t = Double(frame) / sampleRate
-            let envelope = Float(1.0 - t / duration) // simple linear fade-out, avoids clicks
+            let envelope = Float(1.0 - t / duration)
             let sample = Float(sin(2.0 * .pi * frequency * t)) * envelope * 0.2
             channel[frame] = sample
         }

@@ -57,6 +57,10 @@ final class GameScene: SKScene {
 
     var onLemmingTapped: ((Int) -> Void)?
     var onExplosion: (() -> Void)?
+    var onSplat: (() -> Void)?
+    private var lastPointer: CGPoint?
+    private var hoverRing = SKShapeNode(circleOfRadius: 10)
+    private var miniMapNode: SKSpriteNode?
 
     init(engine: GameEngine) {
         self.engine = engine
@@ -80,11 +84,20 @@ final class GameScene: SKScene {
         lastGrid = Array(repeating: Array(repeating: Tile.empty, count: engine.width), count: engine.height)
         updateTerrain()
         addChild(makeEntranceHatch())
+        for (r, row) in engine.grid.enumerated() {
+            for (c, tile) in row.enumerated() where tile == .exit {
+                addChild(makeExitHouse(row: r, col: c))
+            }
+        }
 
         camera = gameCamera
         addChild(gameCamera)
+        gameCamera.addChild(makeMiniMap())
         let startX = CGFloat(engine.entranceColumn) * tileSize
         gameCamera.position = CGPoint(x: clampedCameraX(startX), y: worldHeight / 2)
+        #if os(macOS)
+        view.window?.acceptsMouseMovedEvents = true
+        #endif
     }
 
     func setEnginePaused(_ paused: Bool) { paused_ = paused }
@@ -103,6 +116,7 @@ final class GameScene: SKScene {
         gameCamera.setScale(min(max(fitHeightScale, minZoom), maxZoom))
         gameCamera.position.y = worldHeight / 2
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
+        miniMapNode?.position = CGPoint(x: 0, y: size.height * gameCamera.xScale / 2 - 6)
     }
 
     // MARK: - Camera: horizontal scroll only
@@ -190,6 +204,48 @@ final class GameScene: SKScene {
         return node
     }
 
+    private func makeExitHouse(row: Int, col: Int) -> SKNode {
+        let node = SKNode()
+        node.zPosition = 4
+        node.position = CGPoint(
+            x: CGFloat(col) * tileSize + tileSize / 2,
+            y: flipRow(row) + tileSize / 2
+        )
+        let arch = SKShapeNode(rectOf: CGSize(width: tileSize * 1.8, height: tileSize * 2.1), cornerRadius: 4)
+        arch.fillColor = SKColor(red: 0.55, green: 0.18, blue: 0.12, alpha: 1)
+        arch.strokeColor = SKColor(red: 0.85, green: 0.65, blue: 0.20, alpha: 1)
+        arch.lineWidth = 2
+        arch.position = CGPoint(x: 0, y: tileSize * 0.4)
+        node.addChild(arch)
+        let door = SKShapeNode(rectOf: CGSize(width: tileSize * 0.9, height: tileSize * 1.15), cornerRadius: 2)
+        door.fillColor = SKColor(red: 0.12, green: 0.08, blue: 0.05, alpha: 1)
+        door.strokeColor = .clear
+        door.position = CGPoint(x: 0, y: tileSize * 0.05)
+        arch.addChild(door)
+        let glow = SKShapeNode(circleOfRadius: 3)
+        glow.fillColor = SKColor(red: 1, green: 0.82, blue: 0.25, alpha: 1)
+        glow.strokeColor = .clear
+        glow.position = CGPoint(x: 0, y: tileSize * 0.85)
+        glow.run(.repeatForever(.sequence([.fadeAlpha(to: 0.35, duration: 0.5), .fadeAlpha(to: 1, duration: 0.5)])))
+        arch.addChild(glow)
+        return node
+    }
+
+    private func makeMiniMap() -> SKSpriteNode {
+        let node = SKSpriteNode(color: .black, size: CGSize(width: 220, height: 28))
+        node.zPosition = 50
+        node.name = "minimap"
+        node.anchorPoint = CGPoint(x: 0.5, y: 1)
+        miniMapNode = node
+        hoverRing.strokeColor = SKColor(red: 1, green: 0.85, blue: 0.2, alpha: 0.9)
+        hoverRing.fillColor = .clear
+        hoverRing.lineWidth = 1.5
+        hoverRing.zPosition = 12
+        hoverRing.isHidden = true
+        addChild(hoverRing)
+        return node
+    }
+
     /// Only touches the cells that actually changed since last frame —
     /// digging/bashing/mining edit one or two tiles per tick, so rebuilding
     /// the entire grid's shape nodes every time was wasted work that caused
@@ -266,8 +322,10 @@ final class GameScene: SKScene {
             ticked = true
             accumulator -= step
         }
-        if ticked { updateTerrain() }
+        if ticked { updateTerrain(); refreshMiniMap() }
         syncLemmingNodes()
+        edgeScroll()
+        updateHover()
     }
 
     private func syncLemmingNodes() {
@@ -299,10 +357,17 @@ final class GameScene: SKScene {
         let previous = previousStates[lem.id] ?? lem.state
         let wasOhNo: Bool
         if case .ohNo = previous { wasOhNo = true } else { wasOhNo = false }
+        let wasSplat: Bool
+        if case .splatting = previous { wasSplat = true } else { wasSplat = false }
 
         switch lem.state {
         case .basher, .miner, .digger:
             if tickCounter % 4 == 0 { addParticles(kind: .dust, at: position) }
+        case .splatting:
+            if !wasSplat {
+                addParticles(kind: .dust, at: position)
+                onSplat?()
+            }
         case .dead:
             if wasOhNo {
                 addParticles(kind: .explosion, at: position)
@@ -399,6 +464,7 @@ final class GameScene: SKScene {
     private func updateAppearance(_ node: SKSpriteNode, for lem: Lemming) {
         let badge = node.childNode(withName: "badge") as? SKShapeNode
         badge?.isHidden = true
+        node.yScale = 1
         let countLabel = node.childNode(withName: "countdown") as? SKLabelNode
         if let digit = lem.countdownDigit {
             countLabel?.text = "\(digit)"
@@ -412,6 +478,10 @@ final class GameScene: SKScene {
         case .walking:
             if node.action(forKey: "walk") == nil {
                 node.run(.repeatForever(LemmingSprites.walkAnimation), withKey: "walk")
+            }
+            if lem.hasClimber || lem.hasFloater {
+                badge?.isHidden = false
+                badge?.fillColor = lem.hasClimber ? .systemGreen : .cyan
             }
             return
 
@@ -437,6 +507,17 @@ final class GameScene: SKScene {
             badge?.isHidden = false
             badge?.fillColor = .brown
 
+        case .shrugging:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            badge?.isHidden = false
+            badge?.fillColor = .systemYellow
+
+        case .splatting:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            node.yScale = 0.4
+
         case .ohNo:
             node.removeAction(forKey: "walk")
             node.texture = LemmingSprites.stand
@@ -459,12 +540,14 @@ final class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = touches.first else { return }
         dragStart = t.location(in: self)
+        lastPointer = dragStart
         didDrag = false
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = touches.first, let start = dragStart else { return }
         let location = t.location(in: self)
+        lastPointer = location
         let delta = start.x - location.x
         if abs(delta) > 2 {
             didDrag = true
@@ -481,12 +564,14 @@ final class GameScene: SKScene {
     #elseif os(macOS)
     override func mouseDown(with event: NSEvent) {
         dragStart = event.location(in: self)
+        lastPointer = dragStart
         didDrag = false
     }
 
     override func mouseDragged(with event: NSEvent) {
         guard let start = dragStart else { return }
         let location = event.location(in: self)
+        lastPointer = location
         let delta = start.x - location.x
         if abs(delta) > 2 {
             didDrag = true
@@ -500,19 +585,98 @@ final class GameScene: SKScene {
         dragStart = nil
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        lastPointer = event.location(in: self)
+    }
+
     override func scrollWheel(with event: NSEvent) {
         pan(bySceneDelta: -event.scrollingDeltaX)
     }
     #endif
 
     private func handleTap(at point: CGPoint) {
-        let nodesHere = nodes(at: point)
-        for n in nodesHere {
-            let name = n.name ?? n.parent?.name
-            if let name, name.hasPrefix("lem-"), let id = Int(name.dropFirst(4)) {
-                onLemmingTapped?(id)
-                return
+        if let id = nearestLiving(to: point) {
+            onLemmingTapped?(id)
+        }
+    }
+
+    private func nearestLiving(to point: CGPoint) -> Int? {
+        let radius = tileSize * 1.6
+        var best: (Int, CGFloat)?
+        for lem in engine.lemmings where lem.canReceiveSkill {
+            let p = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.4)
+            let d = hypot(p.x - point.x, p.y - point.y)
+            if d <= radius, best == nil || d < best!.1 {
+                best = (lem.id, d)
             }
         }
+        return best?.0
+    }
+
+    private func edgeScroll() {
+        guard !paused_, let p = lastPointer else { return }
+        let half = size.width * gameCamera.xScale / 2
+        let left = gameCamera.position.x - half
+        let right = gameCamera.position.x + half
+        let band = tileSize * 1.4
+        if p.x < left + band {
+            pan(bySceneDelta: -2.4)
+        } else if p.x > right - band {
+            pan(bySceneDelta: 2.4)
+        }
+    }
+
+    private func updateHover() {
+        guard let p = lastPointer, let id = nearestLiving(to: p),
+              let lem = engine.lemmings.first(where: { $0.id == id }) else {
+            hoverRing.isHidden = true
+            return
+        }
+        hoverRing.isHidden = false
+        hoverRing.position = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.7)
+    }
+
+    private func refreshMiniMap() {
+        guard let node = miniMapNode else { return }
+        let w = 220, h = 28
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        for r in 0..<engine.height {
+            for c in 0..<engine.width {
+                let t = engine.tile(r, c)
+                let color: CGColor?
+                switch t {
+                case .dirt: color = CGColor(red: 0.45, green: 0.28, blue: 0.08, alpha: 1)
+                case .steel: color = CGColor(red: 0.55, green: 0.55, blue: 0.6, alpha: 1)
+                case .trap: color = CGColor(red: 0.8, green: 0.1, blue: 0.1, alpha: 1)
+                case .exit: color = CGColor(red: 1, green: 0.85, blue: 0.2, alpha: 1)
+                case .entrance: color = CGColor(red: 0.2, green: 0.9, blue: 0.3, alpha: 1)
+                case .empty: color = nil
+                }
+                guard let color else { continue }
+                ctx.setFillColor(color)
+                let x = c * w / max(engine.width, 1)
+                let y = (engine.height - 1 - r) * h / max(engine.height, 1)
+                let cw = max(1, w / max(engine.width, 1))
+                let ch = max(1, h / max(engine.height, 1))
+                ctx.fill(CGRect(x: x, y: y, width: cw, height: ch))
+            }
+        }
+        let half = size.width * gameCamera.xScale / 2
+        let viewW = worldWidth > 0 ? (half * 2 / worldWidth) * CGFloat(w) : 0
+        let viewX = worldWidth > 0 ? (gameCamera.position.x - half) / worldWidth * CGFloat(w) : 0
+        ctx.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.85))
+        ctx.setLineWidth(1)
+        ctx.stroke(CGRect(x: viewX, y: 1, width: max(4, viewW), height: CGFloat(h - 2)))
+        guard let image = ctx.makeImage() else { return }
+        let tex = SKTexture(cgImage: image)
+        tex.filteringMode = .nearest
+        node.texture = tex
+        node.size = CGSize(width: 220, height: 28)
     }
 }

@@ -59,8 +59,9 @@ Pick the `iLemmings-iOS` or `iLemmings-macOS` scheme and run (`⌘R`).
 3. Tap a skill in the control panel at the bottom, then tap a lemming to assign it (the skill stays selected so you can assign it again)
 4. Use **Builder** to bridge gaps, **Digger**/**Basher**/**Miner** to tunnel through terrain, **Blocker** to redirect the crowd, **Climber**/**Floater** to survive walls and long falls, and **Bomber** to blast an obstacle clear
 5. **− / +** change how fast new lemmings spawn. **Fast-forward** speeds the whole level up. Stuck? **Nuke** arms the Bomber countdown one lemming at a time
-6. Save enough lemmings through the exit before time runs out to earn stars and unlock the next level
-7. Switch language, appearance and sound any time from **Settings**
+6. Keyboard: `1`–`8` skills, `−`/`=` release rate, `F` fast-forward, `Space` pause. Move the pointer to a screen edge to scroll
+7. Save enough lemmings through the exit before time runs out to earn stars and unlock the next level
+8. Switch language, appearance and sound any time from **Settings**
 
 ## 🧪 Testing
 
