@@ -32,10 +32,15 @@ struct GameView: View {
             VStack(spacing: 0) {
                 MiniMapStrip(engine: engine)
                 GeometryReader { proxy in
+                    let playHeight = min(proxy.size.height, CGFloat(engine.height) * 14)
                     SpriteView(scene: scene)
-                        .frame(width: proxy.size.width, height: proxy.size.height)
-                        .onAppear { scene.resizeViewport(to: proxy.size) }
-                        .onChange(of: proxy.size) { _, newSize in scene.resizeViewport(to: newSize) }
+                        .frame(width: proxy.size.width, height: playHeight)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .onAppear { scene.resizeViewport(to: CGSize(width: proxy.size.width, height: playHeight)) }
+                        .onChange(of: proxy.size) { _, newSize in
+                            let h = min(newSize.height, CGFloat(engine.height) * 14)
+                            scene.resizeViewport(to: CGSize(width: newSize.width, height: h))
+                        }
                 }
                 .focusable()
                 .onKeyPress(.space) {
@@ -175,7 +180,7 @@ private struct MiniMapStrip: View {
                 }
             }
         }
-        .frame(height: 28)
+        .frame(height: 18)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
     }
 }
@@ -222,9 +227,9 @@ private struct BottomControlPanel: View {
         HStack(spacing: 2) {
             ControlButton(systemImage: "minus") { engine.changeReleaseRate(-1) }
             Text("\(engine.releaseRate)")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .foregroundStyle(lcdGreen)
-                .frame(width: 22)
+                .frame(width: 18)
             ControlButton(systemImage: "plus") { engine.changeReleaseRate(1) }
             ForEach(LemSkill.allCases) { skill in
                 SkillButton(skill: skill, engine: engine)
@@ -263,9 +268,9 @@ private struct BottomControlPanel: View {
 
     private func statCell(_ title: String, _ value: String, animated: Bool = false) -> some View {
         VStack(spacing: 0) {
-            Text(title).font(.system(size: 8, weight: .medium, design: .monospaced)).opacity(0.7)
+            Text(title).font(.system(size: 7, weight: .medium, design: .monospaced)).opacity(0.7)
             Text(value)
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .contentTransition(animated ? .numericText() : .identity)
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: value)
         }
@@ -281,7 +286,7 @@ private struct BottomControlPanel: View {
 /// strip that never stretches to fill the window width. `maxWidth: .infinity`
 /// on each button here used to do exactly that on a wide macOS window,
 /// which is why the whole panel read as oversized.
-private let controlButtonSize: CGFloat = 34
+private let controlButtonSize: CGFloat = 26
 
 private struct ControlButton: View {
     let systemImage: String
@@ -290,7 +295,7 @@ private struct ControlButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 14))
+                .font(.system(size: 11))
                 .foregroundStyle(lcdGreen)
                 .frame(width: controlButtonSize, height: controlButtonSize)
         }
@@ -313,7 +318,7 @@ private struct SkillButton: View {
             ZStack(alignment: .topLeading) {
                 DitheredSkillBackground()
                 Image(systemName: skill.symbol)
-                    .font(.system(size: 14))
+                    .font(.system(size: 11))
                     .foregroundStyle(Color(red: 0.15, green: 0.62, blue: 0.20))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Text("\(count)")
