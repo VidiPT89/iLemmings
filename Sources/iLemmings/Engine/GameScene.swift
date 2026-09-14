@@ -48,6 +48,7 @@ final class GameScene: SKScene {
     var onLemmingTapped: ((Int) -> Void)?
     var onExplosion: (() -> Void)?
     var onSplat: (() -> Void)?
+    var onDrown: (() -> Void)?
     private var lastPointer: CGPoint?
     private var hoverRing = SKShapeNode(circleOfRadius: 10)
 
@@ -342,6 +343,9 @@ final class GameScene: SKScene {
         let wasSplat: Bool
         if case .splatting = previous { wasSplat = true } else { wasSplat = false }
 
+        let wasDrown: Bool
+        if case .drowning = previous { wasDrown = true } else { wasDrown = false }
+
         switch lem.state {
         case .basher, .miner, .digger:
             if tickCounter % 4 == 0 { addParticles(kind: .dust, at: position) }
@@ -350,6 +354,8 @@ final class GameScene: SKScene {
                 addParticles(kind: .dust, at: position)
                 onSplat?()
             }
+        case .drowning:
+            if !wasDrown { onDrown?() }
         case .dead:
             if wasOhNo {
                 addParticles(kind: .explosion, at: position)
@@ -499,6 +505,13 @@ final class GameScene: SKScene {
             node.removeAction(forKey: "walk")
             node.texture = LemmingSprites.stand
             node.yScale = 0.4
+
+        case .drowning:
+            node.removeAction(forKey: "walk")
+            node.texture = LemmingSprites.stand
+            node.yScale = 0.55
+            badge?.isHidden = false
+            badge?.fillColor = .cyan
 
         case .ohNo:
             node.removeAction(forKey: "walk")

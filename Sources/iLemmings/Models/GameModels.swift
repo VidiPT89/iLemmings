@@ -7,7 +7,8 @@ enum Tile: Character {
     case steel = "S"     // indestructible
     case entrance = "E"
     case exit = "X"
-    case trap = "T"      // instant death (spikes/water)
+    case trap = "T"      // spikes: splat
+    case water = "W"     // drown (floater does not save you)
 }
 
 enum LemSkill: String, CaseIterable, Identifiable {
@@ -55,6 +56,7 @@ enum LemState: Equatable {
     case floating
     case shrugging(ticksLeft: Int)
     case splatting(ticksLeft: Int)
+    case drowning(ticksLeft: Int)
     case ohNo(ticksLeft: Int)
     case saved
     case dead
@@ -84,7 +86,7 @@ struct Lemming: Identifiable {
     var isAlive: Bool { state != .dead && state != .saved }
     var canReceiveSkill: Bool {
         switch state {
-        case .dead, .saved, .splatting, .ohNo: return false
+        case .dead, .saved, .splatting, .drowning, .ohNo: return false
         default: return true
         }
     }

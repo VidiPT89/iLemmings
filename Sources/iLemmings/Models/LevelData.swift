@@ -142,5 +142,103 @@ enum LevelLibrary {
         )
     }()
 
-    static let all: [LevelDefinition] = [level1, level2, level3, level4]
+    /// Builder must bridge a water pit. Floater does not save you from drowning.
+    static let level5: LevelDefinition = {
+        let width = 26
+        let air = row(width, [(".", width)])
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
+        let platform = row(width, [("#", 9), (".", 6), ("#", 8), ("X", 1), ("#", 2)])
+        let water = row(width, [("#", 9), ("W", 6), ("#", 11)])
+        let bed = row(width, [("S", width)])
+        var rows: [String] = [air, air, entranceRow, air, air, platform]
+        rows.append(contentsOf: Array(repeating: water, count: 3))
+        rows.append(bed)
+        return LevelDefinition(
+            id: "level5",
+            nameKey: "Still Water",
+            pack: .fun,
+            rows: rows,
+            totalLemmings: 10,
+            neededToSave: 6,
+            spawnIntervalTicks: 42,
+            timeLimitSeconds: 180,
+            skillCounts: [.builder: 5, .blocker: 2, .floater: 2]
+        )
+    }()
+
+    /// Steel wall too tall to hop: Climber (or a long Builder ramp from the left).
+    static let level6: LevelDefinition = {
+        let width = 28
+        let air = row(width, [(".", width)])
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", 6), ("S", 2), (".", 17)])
+        let steelFace = row(width, [(".", 9), ("S", 2), (".", 17)])
+        let walk = row(width, [("#", 9), ("S", 2), ("#", 14), ("X", 1), ("#", 2)])
+        let floor = row(width, [("S", width)])
+        var rows: [String] = [air, entranceRow]
+        rows.append(contentsOf: Array(repeating: steelFace, count: 6))
+        rows.append(contentsOf: [walk, floor])
+        return LevelDefinition(
+            id: "level6",
+            nameKey: "Iron Gate",
+            pack: .tricky,
+            rows: rows,
+            totalLemmings: 12,
+            neededToSave: 8,
+            spawnIntervalTicks: 38,
+            timeLimitSeconds: 200,
+            skillCounts: [.climber: 12, .builder: 2, .blocker: 1]
+        )
+    }()
+
+    /// Mine under a steel roof toward an exit, or bomb a dirt plug over water.
+    static let level7: LevelDefinition = {
+        let width = 32
+        let air = row(width, [(".", width)])
+        let roof = row(width, [("S", width)])
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
+        let dirt = row(width, [("#", 12), (".", 8), ("S", 3), ("X", 1), ("#", 8)])
+        let water = row(width, [("#", 12), ("W", 8), ("S", 4), ("#", 8)])
+        let bed = row(width, [("S", width)])
+        var rows: [String] = [roof, air, entranceRow, air, dirt, dirt]
+        rows.append(contentsOf: Array(repeating: water, count: 2))
+        rows.append(bed)
+        return LevelDefinition(
+            id: "level7",
+            nameKey: "Sunken Plug",
+            pack: .taxing,
+            rows: rows,
+            totalLemmings: 14,
+            neededToSave: 8,
+            spawnIntervalTicks: 36,
+            timeLimitSeconds: 220,
+            skillCounts: [.builder: 4, .blocker: 2, .bomber: 2, .miner: 2]
+        )
+    }()
+
+    static let level8: LevelDefinition = {
+        let width = 34
+        let air = row(width, [(".", width)])
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
+        let ledge = row(width, [("#", 8), (".", 5), ("#", 6), (".", 6), ("#", 6), ("X", 1), ("#", 2)])
+        let hazards = row(width, [("#", 8), ("W", 5), ("#", 6), ("T", 6), ("#", 9)])
+        let bed = row(width, [("S", width)])
+        var rows: [String] = [air, air, entranceRow, air, ledge]
+        rows.append(contentsOf: Array(repeating: hazards, count: 2))
+        rows.append(bed)
+        return LevelDefinition(
+            id: "level8",
+            nameKey: "Two Gaps",
+            pack: .mayhem,
+            rows: rows,
+            totalLemmings: 16,
+            neededToSave: 10,
+            spawnIntervalTicks: 32,
+            timeLimitSeconds: 240,
+            skillCounts: [.builder: 3, .blocker: 2, .climber: 1, .floater: 1, .bomber: 1]
+        )
+    }()
+
+    static let all: [LevelDefinition] = [
+        level1, level5, level2, level6, level3, level7, level4, level8,
+    ]
 }

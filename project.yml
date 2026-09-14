@@ -12,6 +12,9 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+  configs:
+    Debug:
+      ENABLE_TESTABILITY: YES
 
 targets:
   iLemmings-iOS:
@@ -55,6 +58,20 @@ targets:
         COMBINE_HIDPI_IMAGES: true
         ENABLE_HARDENED_RUNTIME: true
 
+  iLemmingsTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: iLemmings-macOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.ividi.ilemmings.tests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/iLemmings.app/Contents/MacOS/iLemmings
+        BUNDLE_LOADER: $(TEST_HOST)
+
 schemes:
   iLemmings-iOS:
     build:
@@ -66,5 +83,9 @@ schemes:
     build:
       targets:
         iLemmings-macOS: all
+        iLemmingsTests: all
     run:
       config: Debug
+    test:
+      targets:
+        - iLemmingsTests

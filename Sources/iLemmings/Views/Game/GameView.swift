@@ -106,6 +106,7 @@ struct GameView: View {
             scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
             scene.onExplosion = { sound.play(.explode) }
             scene.onSplat = { sound.play(.splat) }
+            scene.onDrown = { sound.play(.drown) }
         }
         .sheet(isPresented: $showResult) {
             ResultView(
@@ -131,6 +132,7 @@ struct GameView: View {
         scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
         scene.onExplosion = { sound.play(.explode) }
         scene.onSplat = { sound.play(.splat) }
+        scene.onDrown = { sound.play(.drown) }
         isPaused = false
         showResult = false
         earnedStars = 0
@@ -157,6 +159,7 @@ private struct MiniMapStrip: View {
                     case .dirt: color = Color(red: 0.45, green: 0.28, blue: 0.08)
                     case .steel: color = Color(red: 0.55, green: 0.55, blue: 0.6)
                     case .trap: color = Color(red: 0.8, green: 0.12, blue: 0.1)
+                    case .water: color = Color(red: 0.15, green: 0.4, blue: 0.7)
                     case .exit: color = Color(red: 1, green: 0.85, blue: 0.2)
                     case .entrance: color = Color(red: 0.2, green: 0.9, blue: 0.3)
                     case .empty: color = nil
