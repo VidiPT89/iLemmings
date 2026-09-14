@@ -2,7 +2,6 @@ import SwiftUI
 import SpriteKit
 
 struct GameView: View {
-    @EnvironmentObject var loc: LocalizationManager
     @EnvironmentObject var sound: SoundManager
     @Environment(\.dismiss) private var dismiss
     @AppStorage("unlockedLevelIndex") private var unlockedIndex = 0

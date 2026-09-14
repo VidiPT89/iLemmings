@@ -9,7 +9,7 @@
 
 - ✅ Classic Lemmings gameplay: walking, falling, digging and building lemmings on destructible terrain
 - ✅ Eight assignable skills — Climber, Floater, Bomber, Blocker, Builder, Basher, Miner and Digger
-- ✅ Release rate, fast-forward, Nuke and a single bottom control panel with OUT / IN / TIME
+- ✅ Release rate, fast-forward, Nuke, minimap and a single bottom control panel with OUT / IN / TIME
 - ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with walking, climbing, blocking and floater poses
 - ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it
 - ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber, confetti on victory

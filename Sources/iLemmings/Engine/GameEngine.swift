@@ -150,7 +150,6 @@ final class GameEngine: ObservableObject {
             lem.state = .digger
         case .bomber:
             guard lem.countdownTicks == 0 else { return }
-            if case .ohNo = lem.state { return }
             lem.countdownTicks = bomberFuseTicks
         }
 
@@ -172,7 +171,7 @@ final class GameEngine: ObservableObject {
         guard !isWon, !isLost else { return }
         tickCounter += 1
 
-        if tickCounter % Int(ticksPerSecond) == 0 {
+        if tickCounter % Int(ticksPerSecond) == 0, secondsRemaining > 0 {
             secondsRemaining -= 1
         }
 
@@ -222,7 +221,14 @@ final class GameEngine: ObservableObject {
     /// reaching the minimum save count doesn't end the level early.
     private func evaluateEndConditions() {
         let allLemmingsResolved = spawnedCount >= level.totalLemmings && lemmings.allSatisfy { !$0.isAlive }
-        guard allLemmingsResolved || secondsRemaining <= 0 else { return }
+        let finishingAnimation = lemmings.contains {
+            if case .splatting = $0.state { return true }
+            if case .ohNo = $0.state { return true }
+            return false
+        }
+        // Wait for splat/Oh-No so the last death is visible; otherwise end
+        // when everyone is resolved or the clock hits zero.
+        guard allLemmingsResolved || (secondsRemaining <= 0 && !finishingAnimation) else { return }
         if savedCount >= level.neededToSave {
             isWon = true
         } else {
@@ -350,7 +356,7 @@ final class GameEngine: ObservableObject {
                 lem.state = .walking
             } else {
                 setTile(lem.y, frontCol, .empty)
-                lem.x += Double(dir)
+                lem.x = Double(frontCol)
             }
 
         case .miner:
@@ -364,7 +370,7 @@ final class GameEngine: ObservableObject {
             } else {
                 setTile(lem.y, frontCol, .empty)
                 setTile(lem.y + 1, frontCol, .empty)
-                lem.x += Double(dir)
+                lem.x = Double(frontCol)
                 lem.y += 1
             }
 

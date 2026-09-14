@@ -26,7 +26,7 @@
 "pauseResume" = "Resume";
 "pauseRestart" = "Restart";
 "pauseMenu" = "Main Menu";
-"nukeConfirm" = "Give every lemming a bomber countdown?";
+"nukeConfirm" = "Arm every remaining lemming with a bomber countdown?";
 "nukeConfirmAction" = "Nuke";
 "levelWinTitle" = "Level Complete!";
 "levelWinBody" = "You saved enough lemmings.";
