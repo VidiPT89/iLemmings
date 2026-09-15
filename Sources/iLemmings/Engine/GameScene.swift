@@ -14,12 +14,8 @@ struct SeededGenerator: RandomNumberGenerator {
 }
 
 final class GameScene: SKScene {
-    /// Shared with SwiftUI so the playfield height and camera cap stay in sync.
-    static let tileOnScreen: CGFloat = 28
-
     let engine: GameEngine
-    private let tileSize: CGFloat = GameScene.tileOnScreen
-    private let maxTileOnScreen: CGFloat = GameScene.tileOnScreen
+    private let tileSize: CGFloat = 28
     private let minZoom: CGFloat = 0.15
     private let maxZoom: CGFloat = 8.0
 
@@ -94,17 +90,14 @@ final class GameScene: SKScene {
 
     func setEnginePaused(_ paused: Bool) { paused_ = paused }
 
-    /// Called by the SwiftUI container whenever the actual on-screen size
-    /// changes. Camera scale is inverted: larger scale shows more world
-    /// (smaller sprites). Always show the full level height; never zoom in
-    /// past `maxTileOnScreen`, so a tall window does not inflate the lemmings.
+    /// Fill the SpriteView with the full level height (classic side-scroll).
+    /// Lemmings stay a fraction of a tile, so stretching the map to the
+    /// window no longer turns them into toolbar-sized giants.
     func resizeViewport(to newSize: CGSize) {
         guard newSize.width > 0, newSize.height > 0 else { return }
         size = newSize
         let fitHeightScale = worldHeight / newSize.height
-        let capZoomIn = tileSize / maxTileOnScreen
-        let scale = max(fitHeightScale, capZoomIn)
-        gameCamera.setScale(min(max(scale, minZoom), maxZoom))
+        gameCamera.setScale(min(max(fitHeightScale, minZoom), maxZoom))
         gameCamera.position.y = worldHeight / 2
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
     }
@@ -142,7 +135,7 @@ final class GameScene: SKScene {
         case .taxing: color = SKColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 1)
         case .mayhem: color = SKColor(red: 0.10, green: 0.03, blue: 0.03, alpha: 1)
         }
-        let bg = SKSpriteNode(color: color, size: CGSize(width: worldWidth, height: worldHeight))
+        let bg = SKSpriteNode(color: color, size: CGSize(width: 20_000, height: 20_000))
         bg.position = CGPoint(x: worldWidth / 2, y: worldHeight / 2)
         bg.zPosition = -10
         return bg
