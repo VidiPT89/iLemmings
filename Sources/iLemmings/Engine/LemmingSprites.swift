@@ -9,7 +9,7 @@ import CoreGraphics
 /// iOS and macOS.
 enum LemmingSprites {
 
-    private static let pixelScale = 4
+    private static let pixelScale = 3
 
     // 8 columns x 12 rows. '.' = transparent.
     // 1 = hair (green), 2 = skin, 3 = overalls (blue), 4 = shoe/outline (dark navy), 5 = eye (black)

@@ -48,7 +48,7 @@ final class GameScene: SKScene {
     var onSplat: (() -> Void)?
     var onDrown: (() -> Void)?
     private var lastPointer: CGPoint?
-    private var hoverRing = SKShapeNode(circleOfRadius: 7)
+    private var hoverRing = SKShapeNode(circleOfRadius: 5)
 
     init(engine: GameEngine) {
         self.engine = engine
@@ -80,7 +80,7 @@ final class GameScene: SKScene {
         addChild(gameCamera)
         hoverRing.strokeColor = SKColor(red: 1, green: 0.85, blue: 0.2, alpha: 0.9)
         hoverRing.fillColor = .clear
-        hoverRing.lineWidth = 1.5
+        hoverRing.lineWidth = 1
         hoverRing.zPosition = 12
         hoverRing.isHidden = true
         addChild(hoverRing)
@@ -413,25 +413,27 @@ final class GameScene: SKScene {
 
     private func makeLemmingNode(for lem: Lemming) -> SKSpriteNode {
         let node = SKSpriteNode(texture: LemmingSprites.stand)
-        node.size = CGSize(width: tileSize * 1.0, height: tileSize * 1.6)
+        // Terrain tiles are the map unit. Classic lemmings are much smaller
+        // than a block (about half a tile wide, under one tile tall).
+        node.size = CGSize(width: tileSize * 0.48, height: tileSize * 0.72)
         node.anchorPoint = CGPoint(x: 0.5, y: 0)
         node.name = "lem-\(lem.id)"
         node.zPosition = 10
 
-        let badge = SKShapeNode(circleOfRadius: 3.5)
+        let badge = SKShapeNode(circleOfRadius: 2.2)
         badge.name = "badge"
         badge.strokeColor = .black
-        badge.lineWidth = 0.5
-        badge.position = CGPoint(x: 0, y: node.size.height + 5)
+        badge.lineWidth = 0.4
+        badge.position = CGPoint(x: 0, y: node.size.height + 3)
         badge.isHidden = true
         node.addChild(badge)
 
         let countLabel = SKLabelNode(fontNamed: "Menlo-Bold")
         countLabel.name = "countdown"
-        countLabel.fontSize = 10
+        countLabel.fontSize = 8
         countLabel.fontColor = SKColor(red: 0.35, green: 0.95, blue: 0.35, alpha: 1)
         countLabel.verticalAlignmentMode = .center
-        countLabel.position = CGPoint(x: 0, y: node.size.height + 8)
+        countLabel.position = CGPoint(x: 0, y: node.size.height + 5)
         countLabel.zPosition = 2
         node.addChild(countLabel)
 
@@ -588,10 +590,10 @@ final class GameScene: SKScene {
     }
 
     private func nearestLiving(to point: CGPoint) -> Int? {
-        let radius = tileSize * 1.6
+        let radius = tileSize * 1.15
         var best: (Int, CGFloat)?
         for lem in engine.lemmings where lem.canReceiveSkill {
-            let p = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.4)
+            let p = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.35)
             let d = hypot(p.x - point.x, p.y - point.y)
             if d <= radius, best == nil || d < best!.1 {
                 best = (lem.id, d)
@@ -620,6 +622,6 @@ final class GameScene: SKScene {
             return
         }
         hoverRing.isHidden = false
-        hoverRing.position = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.7)
+        hoverRing.position = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.38)
     }
 }
