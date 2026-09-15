@@ -32,14 +32,11 @@ struct GameView: View {
             VStack(spacing: 0) {
                 MiniMapStrip(engine: engine)
                 GeometryReader { proxy in
-                    let playHeight = min(proxy.size.height, CGFloat(engine.height) * GameScene.tileOnScreen)
                     SpriteView(scene: scene)
-                        .frame(width: proxy.size.width, height: playHeight)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .onAppear { scene.resizeViewport(to: CGSize(width: proxy.size.width, height: playHeight)) }
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .onAppear { scene.resizeViewport(to: proxy.size) }
                         .onChange(of: proxy.size) { _, newSize in
-                            let h = min(newSize.height, CGFloat(engine.height) * GameScene.tileOnScreen)
-                            scene.resizeViewport(to: CGSize(width: newSize.width, height: h))
+                            scene.resizeViewport(to: newSize)
                         }
                 }
                 .focusable()
@@ -155,32 +152,46 @@ private struct MiniMapStrip: View {
     var body: some View {
         Canvas { context, size in
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
-            let cw = size.width / CGFloat(max(engine.width, 1))
-            let ch = size.height / CGFloat(max(engine.height, 1))
+            let cols = CGFloat(max(engine.width, 1))
+            let rows = CGFloat(max(engine.height, 1))
+            let cell = min(size.width / cols, size.height / rows)
+            let mapW = cols * cell
+            let mapH = rows * cell
+            let ox = (size.width - mapW) / 2
+            let oy = (size.height - mapH) / 2
             for r in 0..<engine.height {
                 for c in 0..<engine.width {
                     let color: Color?
                     switch engine.tile(r, c) {
-                    case .dirt: color = Color(red: 0.45, green: 0.28, blue: 0.08)
-                    case .steel: color = Color(red: 0.55, green: 0.55, blue: 0.6)
-                    case .trap: color = Color(red: 0.8, green: 0.12, blue: 0.1)
-                    case .water: color = Color(red: 0.15, green: 0.4, blue: 0.7)
+                    case .dirt: color = Color(red: 0.55, green: 0.34, blue: 0.10)
+                    case .steel: color = Color(red: 0.62, green: 0.62, blue: 0.68)
+                    case .trap: color = Color(red: 0.85, green: 0.15, blue: 0.12)
+                    case .water: color = Color(red: 0.18, green: 0.45, blue: 0.78)
                     case .exit: color = Color(red: 1, green: 0.85, blue: 0.2)
-                    case .entrance: color = Color(red: 0.2, green: 0.9, blue: 0.3)
-                    case .empty: color = nil
+                    case .entrance: color = Color(red: 0.25, green: 0.92, blue: 0.35)
+                    case .empty: color = Color(red: 0.08, green: 0.07, blue: 0.10)
                     }
                     guard let color else { continue }
                     let rect = CGRect(
-                        x: CGFloat(c) * cw,
-                        y: CGFloat(r) * ch,
-                        width: max(1, cw),
-                        height: max(1, ch)
+                        x: ox + CGFloat(c) * cell,
+                        y: oy + CGFloat(r) * cell,
+                        width: max(1, cell),
+                        height: max(1, cell)
                     )
                     context.fill(Path(rect), with: .color(color))
                 }
             }
+            for lem in engine.lemmings where lem.isAlive {
+                let rect = CGRect(
+                    x: ox + CGFloat(lem.x) * cell,
+                    y: oy + CGFloat(lem.y) * cell,
+                    width: max(2, cell),
+                    height: max(2, cell)
+                )
+                context.fill(Path(rect), with: .color(lcdGreen))
+            }
         }
-        .frame(height: 24)
+        .frame(height: 52)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
     }
 }
