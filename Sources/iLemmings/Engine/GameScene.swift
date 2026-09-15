@@ -14,12 +14,12 @@ struct SeededGenerator: RandomNumberGenerator {
 }
 
 final class GameScene: SKScene {
+    /// Shared with SwiftUI so the playfield height and camera cap stay in sync.
+    static let tileOnScreen: CGFloat = 28
+
     let engine: GameEngine
-    private let tileSize: CGFloat = 14
-    /// Upper bound on how large a tile may appear on screen (points). Fitting
-    /// the full level height into a tall Mac window used to blow tiles up to
-    /// 50pt+ and make every lemming the size of a toolbar button.
-    private let maxTileOnScreen: CGFloat = 14
+    private let tileSize: CGFloat = GameScene.tileOnScreen
+    private let maxTileOnScreen: CGFloat = GameScene.tileOnScreen
     private let minZoom: CGFloat = 0.15
     private let maxZoom: CGFloat = 8.0
 
@@ -413,7 +413,7 @@ final class GameScene: SKScene {
 
     private func makeLemmingNode(for lem: Lemming) -> SKSpriteNode {
         let node = SKSpriteNode(texture: LemmingSprites.stand)
-        node.size = CGSize(width: tileSize * 0.85, height: tileSize * 1.35)
+        node.size = CGSize(width: tileSize * 1.0, height: tileSize * 1.6)
         node.anchorPoint = CGPoint(x: 0.5, y: 0)
         node.name = "lem-\(lem.id)"
         node.zPosition = 10
@@ -428,7 +428,7 @@ final class GameScene: SKScene {
 
         let countLabel = SKLabelNode(fontNamed: "Menlo-Bold")
         countLabel.name = "countdown"
-        countLabel.fontSize = 8
+        countLabel.fontSize = 10
         countLabel.fontColor = SKColor(red: 0.35, green: 0.95, blue: 0.35, alpha: 1)
         countLabel.verticalAlignmentMode = .center
         countLabel.position = CGPoint(x: 0, y: node.size.height + 8)
