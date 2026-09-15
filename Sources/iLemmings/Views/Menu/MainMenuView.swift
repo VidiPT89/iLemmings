@@ -24,9 +24,13 @@ struct MainMenuView: View {
                     Spacer()
 
                     VStack(spacing: 8) {
-                        Image(systemName: "figure.walk.motion")
-                            .font(.system(size: 64, weight: .bold))
-                            .foregroundStyle(Color.brandGradient)
+                        Image("LemmingMark")
+                            .interpolation(.high)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 96, height: 96)
+                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                            .shadow(color: .brandOrange.opacity(0.45), radius: 16)
                             .offset(y: floatOffset)
                         Text(loc.string(.appName))
                             .font(.system(size: 44, weight: .heavy, design: .rounded))
@@ -38,12 +42,13 @@ struct MainMenuView: View {
 
                     Spacer()
 
-                    VStack(spacing: 14) {
+                    VStack(spacing: 12) {
                         MenuButton(title: loc.string(.menuPlay), icon: "play.fill") { showPlay = true }
                         MenuButton(title: loc.string(.menuLevels), icon: "list.bullet") { showLevels = true }
                         MenuButton(title: loc.string(.menuSettings), icon: "gearshape.fill") { showSettings = true }
                     }
-                    .padding(.horizontal, 32)
+                    .frame(maxWidth: 280)
+                    .frame(maxWidth: .infinity)
 
                     Spacer()
                     Text(loc.string(.developedBy))
@@ -74,16 +79,18 @@ private struct MenuButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
+                    .frame(width: 18)
                 Text(title).fontWeight(.semibold)
-                Spacer()
+                Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.caption)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .background(Color.brandGradient)
             .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .scaleEffect(pressed ? 0.97 : 1)
         }
         .buttonStyle(.plain)

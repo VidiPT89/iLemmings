@@ -16,15 +16,13 @@ struct SplashView: View {
             VStack(spacing: 18) {
                 Spacer()
 
-                ZStack {
-                    Circle()
-                        .fill(Color.brandGradient)
-                        .frame(width: 120, height: 120)
-                        .shadow(color: .brandOrange.opacity(0.5), radius: 20)
-                    Image(systemName: "figure.walk.motion")
-                        .font(.system(size: 52, weight: .bold))
-                        .foregroundStyle(.white)
-                }
+                Image("LemmingMark")
+                    .interpolation(.high)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .shadow(color: .brandOrange.opacity(0.5), radius: 20)
                 .scaleEffect(logoScale)
                 .opacity(logoOpacity)
 
