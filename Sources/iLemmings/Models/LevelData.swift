@@ -37,44 +37,24 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 10,
             neededToSave: 5,
-            spawnIntervalTicks: 45,
+            spawnIntervalTicks: 96,
             timeLimitSeconds: 180,
             skillCounts: [.builder: 4, .blocker: 2, .climber: 1, .floater: 1]
         )
     }()
 
-    /// A wall-then-shaft level: teaches Basher (breach the 2-tile-tall wall —
-    /// Climber or Bomber also work) then Digger (breach the floor to reach
-    /// the exit chamber below, or just walk off its far edge). Terrain is
-    /// shared and permanent, so the diggable block is only 2 tiles thick —
-    /// thick enough that Digger visibly saves the walk around, but thin
-    /// enough that even a lemming that falls straight through a tunnel a
-    /// previous lemming dug (no safe mid-air ledge to catch it) still only
-    /// falls 6 tiles total, exactly at the safe limit. A thicker block
-    /// looked fine solo but turned any already-dug column into a death trap
-    /// for every lemming that followed over it — verified with a headless
-    /// simulation, not just by inspection.
+    /// A 2-tile-tall dirt wall on a flat walkway: Basher (or Climber) then
+    /// walk to the exit. No drop after the breach.
     static let level2: LevelDefinition = {
         let width = 28
         let air = row(width, [(".", width)])
-        // Entrance plus the upper half of the basher wall (cols 6-10) —
-        // together with row2's lower half, a 2-tile-tall wall too tall for
-        // the automatic single-ledge hop, so it genuinely requires a skill.
-        let entranceRow = row(width, [(".", 2), ("E", 1), (".", 3), ("#", 5), (".", 17)])
-        let wallLowerAndWalk = row(width, [(".", 6), ("#", 5), (".", 17)])
-        let platformFloor = row(width, [("#", 12), (".", 16)])
-        // Top/bottom of the diggable block the platform drops onto.
-        let diggableLayer = row(width, [(".", 12), ("#", 12), (".", 4)])
-        // Open chamber below the diggable block — fully empty so a lemming
-        // lands here whether it was dug through or fell past the block's
-        // right edge.
-        let chamber = row(width, [(".", width)])
-        let chamberFloor = row(width, [("S", 20), ("X", 1), ("S", 7)])
-
-        var rows: [String] = [air, entranceRow, wallLowerAndWalk, platformFloor, air, air]
-        rows.append(contentsOf: Array(repeating: diggableLayer, count: 2))
-        rows.append(contentsOf: [chamber, chamberFloor])
-
+        // 2-tile-tall dirt wall (cols 8-12). Same-level floor all the way
+        // to the exit: Basher (or Climber) then walk. No drop, so nobody
+        // splats after the breach.
+        let entranceRow = row(width, [(".", 2), ("E", 1), (".", 5), ("#", 5), (".", 15)])
+        let walk = row(width, [("#", 25), ("X", 1), ("#", 2)])
+        let floor = row(width, [("S", width)])
+        let rows = [air, entranceRow, walk, floor]
         return LevelDefinition(
             id: "level2",
             nameKey: "Copper Shaft",
@@ -84,24 +64,19 @@ enum LevelLibrary {
             neededToSave: 6,
             spawnIntervalTicks: 40,
             timeLimitSeconds: 200,
-            skillCounts: [.digger: 3, .basher: 3, .climber: 3, .builder: 2, .bomber: 1]
+            skillCounts: [.basher: 3, .climber: 3, .builder: 2, .blocker: 1]
         )
     }()
 
-    /// A trap gauntlet: teaches Bomber + Miner.
+    /// Trap pit on the walkway: Builder (or Bomber the traps) then the exit.
     static let level3: LevelDefinition = {
         let width = 36
         let air = row(width, [(".", width)])
         let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let roof = row(width, [("#", width)])
-        let trapFloor = row(width, [("#", 14), ("T", 4), ("#", width - 18 - 1), ("X", 1)])
+        let walk = row(width, [("#", 14), (".", 4), ("#", 16), ("X", 1), ("#", 1)])
+        let traps = row(width, [("#", 14), ("T", 4), ("#", 18)])
         let steelFloor = row(width, [("S", width)])
-
-        var rows: [String] = [air, entranceRow, air, air, roof]
-        rows.append(contentsOf: Array(repeating: air, count: 8))
-        rows.append(trapFloor)
-        rows.append(steelFloor)
-
+        let rows = [air, air, entranceRow, air, air, walk, traps, steelFloor]
         return LevelDefinition(
             id: "level3",
             nameKey: "Ember Gauntlet",
@@ -109,26 +84,26 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 14,
             neededToSave: 7,
-            spawnIntervalTicks: 35,
+            spawnIntervalTicks: 96,
             timeLimitSeconds: 220,
-            skillCounts: [.bomber: 3, .miner: 3, .builder: 3, .blocker: 2, .floater: 2]
+            skillCounts: [.builder: 4, .bomber: 3, .blocker: 2, .floater: 2]
         )
     }()
 
-    /// The hardest built-in level: narrow bridges over traps with scarce skills.
+    /// One trap pit to bridge. Two gaps wasted the 12-brick staircase on
+    /// the first hole and left the second unwinnable.
     static let level4: LevelDefinition = {
-        let width = 40
+        let width = 34
         let air = row(width, [(".", width)])
         let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let highLedge = row(width, [("#", 10), (".", width - 10)])
-        let trapGap = row(width, [("#", 10), (".", 6), ("T", 3), (".", width - 19 - 1), ("X", 1)])
-        let deepWall = row(width, [(".", width - 8), ("#", 8)])
-        let steelFloor = row(width, [("S", width)])
-
-        var rows: [String] = [air, entranceRow, air, highLedge, air, trapGap]
-        rows.append(contentsOf: Array(repeating: deepWall, count: 8))
-        rows.append(steelFloor)
-
+        let walk = row(width, [("#", 14), (".", 3), ("#", 14), ("X", 1), ("#", 2)])
+        let shaft = row(width, [("#", 14), (".", 3), ("#", 17)])
+        let hazards = row(width, [("#", 14), ("T", 3), ("#", 17)])
+        let bed = row(width, [("S", width)])
+        var rows: [String] = [air, air, entranceRow, air, air, walk]
+        rows.append(contentsOf: Array(repeating: shaft, count: 8))
+        rows.append(hazards)
+        rows.append(bed)
         return LevelDefinition(
             id: "level4",
             nameKey: "Obsidian Descent",
@@ -136,9 +111,9 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 16,
             neededToSave: 8,
-            spawnIntervalTicks: 30,
+            spawnIntervalTicks: 96,
             timeLimitSeconds: 240,
-            skillCounts: [.builder: 2, .bomber: 2, .basher: 2, .climber: 1, .floater: 1, .blocker: 1]
+            skillCounts: [.builder: 4, .blocker: 2, .floater: 1, .bomber: 1]
         )
     }()
 
@@ -147,8 +122,11 @@ enum LevelLibrary {
         let width = 26
         let air = row(width, [(".", width)])
         let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let platform = row(width, [("#", 9), (".", 6), ("#", 8), ("X", 1), ("#", 2)])
-        let water = row(width, [("#", 9), ("W", 6), ("#", 11)])
+        // Four-tile water (not six): a Builder climbs one row per brick and
+        // this map only has five rows of sky, so a 6-wide gap always left
+        // the last tile open and everyone drowned.
+        let platform = row(width, [("#", 9), (".", 4), ("#", 10), ("X", 1), ("#", 2)])
+        let water = row(width, [("#", 9), ("W", 4), ("#", 13)])
         let bed = row(width, [("S", width)])
         var rows: [String] = [air, air, entranceRow, air, air, platform]
         rows.append(contentsOf: Array(repeating: water, count: 3))
@@ -160,7 +138,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 10,
             neededToSave: 6,
-            spawnIntervalTicks: 42,
+            spawnIntervalTicks: 96,
             timeLimitSeconds: 180,
             skillCounts: [.builder: 5, .blocker: 2, .floater: 2]
         )
@@ -174,8 +152,11 @@ enum LevelLibrary {
         let steelFace = row(width, [(".", 9), ("S", 2), (".", 17)])
         let walk = row(width, [("#", 9), ("S", 2), ("#", 14), ("X", 1), ("#", 2)])
         let floor = row(width, [("S", width)])
+        // Three steel-face rows (not six): after the Climber pulls over the
+        // top, the drop onto the exit ledge must be ≤ 6 tiles or they splat,
+        // and this level had no Floaters.
         var rows: [String] = [air, entranceRow]
-        rows.append(contentsOf: Array(repeating: steelFace, count: 6))
+        rows.append(contentsOf: Array(repeating: steelFace, count: 3))
         rows.append(contentsOf: [walk, floor])
         return LevelDefinition(
             id: "level6",
@@ -186,20 +167,20 @@ enum LevelLibrary {
             neededToSave: 8,
             spawnIntervalTicks: 38,
             timeLimitSeconds: 200,
-            skillCounts: [.climber: 12, .builder: 2, .blocker: 1]
+            skillCounts: [.climber: 12, .builder: 2, .blocker: 1, .floater: 2]
         )
     }()
 
-    /// Mine under a steel roof toward an exit, or bomb a dirt plug over water.
+    /// Bridge a short water gap; steel only under the exit, so a Builder is
+    /// not stopped by a roof after three bricks.
     static let level7: LevelDefinition = {
         let width = 32
         let air = row(width, [(".", width)])
-        let roof = row(width, [("S", width)])
         let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let dirt = row(width, [("#", 12), (".", 8), ("S", 3), ("X", 1), ("#", 8)])
-        let water = row(width, [("#", 12), ("W", 8), ("S", 4), ("#", 8)])
+        let dirt = row(width, [("#", 12), (".", 4), ("S", 3), ("X", 1), ("#", 12)])
+        let water = row(width, [("#", 12), ("W", 4), ("S", 4), ("#", 12)])
         let bed = row(width, [("S", width)])
-        var rows: [String] = [roof, air, entranceRow, air, dirt, dirt]
+        var rows: [String] = [air, air, entranceRow, air, air, dirt]
         rows.append(contentsOf: Array(repeating: water, count: 2))
         rows.append(bed)
         return LevelDefinition(
@@ -209,32 +190,35 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 14,
             neededToSave: 8,
-            spawnIntervalTicks: 36,
+            spawnIntervalTicks: 96,
             timeLimitSeconds: 220,
             skillCounts: [.builder: 4, .blocker: 2, .bomber: 2, .miner: 2]
         )
     }()
 
+    /// Same bridge puzzle as Green Hills, with water instead of spikes and
+    /// a higher save quota. A second gap on this map had no working line:
+    /// the 12-brick staircase spent itself on the first hole.
     static let level8: LevelDefinition = {
         let width = 34
         let air = row(width, [(".", width)])
-        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let ledge = row(width, [("#", 8), (".", 5), ("#", 6), (".", 6), ("#", 6), ("X", 1), ("#", 2)])
-        let hazards = row(width, [("#", 8), ("W", 5), ("#", 6), ("T", 6), ("#", 9)])
-        let bed = row(width, [("S", width)])
-        var rows: [String] = [air, air, entranceRow, air, ledge]
-        rows.append(contentsOf: Array(repeating: hazards, count: 2))
-        rows.append(bed)
+        let entranceRow = row(width, [(".", 3), ("E", 1), (".", width - 4)])
+        let platform = row(width, [("#", 14), (".", 3), ("#", 14), ("X", 1), ("#", 2)])
+        let shaft = row(width, [("#", 14), (".", 3), ("#", 17)])
+        let floor = row(width, [("#", 14), ("W", 3), ("#", 17)])
+        var rows: [String] = [air, air, entranceRow, air, air, platform]
+        rows.append(contentsOf: Array(repeating: shaft, count: 8))
+        rows.append(floor)
         return LevelDefinition(
             id: "level8",
-            nameKey: "Two Gaps",
+            nameKey: "Last Bridge",
             pack: .mayhem,
             rows: rows,
             totalLemmings: 16,
             neededToSave: 10,
-            spawnIntervalTicks: 32,
+            spawnIntervalTicks: 96,
             timeLimitSeconds: 240,
-            skillCounts: [.builder: 3, .blocker: 2, .climber: 1, .floater: 1, .bomber: 1]
+            skillCounts: [.builder: 5, .blocker: 2, .floater: 2, .climber: 1]
         )
     }()
 
