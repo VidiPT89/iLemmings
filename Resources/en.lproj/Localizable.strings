@@ -39,3 +39,11 @@
 "packTricky" = "Tricky";
 "packTaxing" = "Taxing";
 "packMayhem" = "Mayhem";
+"levelGreenHills" = "Green Hills";
+"levelStillWater" = "Still Water";
+"levelCopperShaft" = "Copper Shaft";
+"levelIronGate" = "Iron Gate";
+"levelEmberGauntlet" = "Ember Gauntlet";
+"levelSunkenPlug" = "Sunken Plug";
+"levelObsidianDescent" = "Obsidian Descent";
+"levelLastBridge" = "Last Bridge";

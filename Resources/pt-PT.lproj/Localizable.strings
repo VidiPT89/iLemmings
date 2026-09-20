@@ -39,3 +39,11 @@
 "packTricky" = "Complicado";
 "packTaxing" = "Exigente";
 "packMayhem" = "Caos";
+"levelGreenHills" = "Colinas Verdes";
+"levelStillWater" = "Águas Paradas";
+"levelCopperShaft" = "Poço de Cobre";
+"levelIronGate" = "Portão de Ferro";
+"levelEmberGauntlet" = "Corredor de Brasas";
+"levelSunkenPlug" = "Tampão Submerso";
+"levelObsidianDescent" = "Descida de Obsidiana";
+"levelLastBridge" = "Última Ponte";

@@ -53,7 +53,7 @@ private struct LevelRow: View {
                     .foregroundStyle(.white)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(level.nameKey).font(.headline)
+                Text(loc.string(level.nameKey)).font(.headline)
                 Text("\(loc.string(.hudLemmingsNeeded)): \(level.neededToSave)/\(level.totalLemmings)")
                     .font(.caption)
                     .foregroundStyle(.secondary)

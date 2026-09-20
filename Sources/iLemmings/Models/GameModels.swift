@@ -113,7 +113,7 @@ enum LevelPack: String, CaseIterable {
 
 struct LevelDefinition: Identifiable {
     let id: String
-    let nameKey: String
+    let nameKey: LocKey
     let pack: LevelPack
     let rows: [String]           // ASCII rows, top to bottom, matching Tile raw values
     let totalLemmings: Int

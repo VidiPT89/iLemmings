@@ -319,7 +319,16 @@ final class GameEngine: ObservableObject {
             }
 
         case .blocking:
-            break // stands still forever, acts as an obstacle in walk()
+            // Stands still indefinitely, acting as an obstacle in walk() — but
+            // only while it still has ground. Every other state re-checks its
+            // own footing as it moves; a blocker never moves, so without this
+            // a Miner/Basher/Bomber clearing the tile underneath left it
+            // hanging in mid-air, still turning walkers around.
+            if !isSolid(tile(lem.y + 1, col)) {
+                lem.state = .falling
+                lem.actionProgress = 0
+                lem.fallDistance = 0
+            }
 
         case .building(let steps):
             lem.actionProgress += 1

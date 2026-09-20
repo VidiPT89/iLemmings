@@ -10,7 +10,7 @@ final class LevelSolvabilityTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(
                 engine.savedCount,
                 level.neededToSave,
-                "\(level.id) (\(level.nameKey)): saved \(engine.savedCount)/\(level.neededToSave), dead \(engine.deadCount)"
+                "\(level.id) (\(level.nameKey.rawValue)): saved \(engine.savedCount)/\(level.neededToSave), dead \(engine.deadCount)"
             )
         }
     }

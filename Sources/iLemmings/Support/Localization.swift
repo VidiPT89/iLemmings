@@ -64,6 +64,14 @@ enum LocKey: String {
     case packTricky
     case packTaxing
     case packMayhem
+    case levelGreenHills
+    case levelStillWater
+    case levelCopperShaft
+    case levelIronGate
+    case levelEmberGauntlet
+    case levelSunkenPlug
+    case levelObsidianDescent
+    case levelLastBridge
 }
 
 /// Loads strings from the real `pt-PT.lproj` / `en.lproj` bundles bundled

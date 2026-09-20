@@ -29,7 +29,7 @@ final class GameScene: SKScene {
     private var lemmingNodes: [Int: SKSpriteNode] = [:]
     private var lastUpdateTime: TimeInterval = 0
     private var accumulator: TimeInterval = 0
-    private var paused_ = false
+    private var isEnginePaused = false
     private var previousStates: [Int: LemState] = [:]
     private var tickCounter = 0
 
@@ -43,6 +43,7 @@ final class GameScene: SKScene {
     var onExplosion: (() -> Void)?
     var onSplat: (() -> Void)?
     var onDrown: (() -> Void)?
+    var onTogglePause: (() -> Void)?
     private var lastPointer: CGPoint?
     private var hoverRing = SKShapeNode(circleOfRadius: 5)
 
@@ -85,10 +86,15 @@ final class GameScene: SKScene {
         resizeViewport(to: view.bounds.size)
         #if os(macOS)
         view.window?.acceptsMouseMovedEvents = true
+        // Claim the keyboard up front. Clicking the playfield to assign a
+        // skill makes this view first responder anyway, so keyboard handling
+        // has to live here (see `handleKey`) rather than on a SwiftUI
+        // `.focusable()` wrapper that loses focus to it on the first click.
+        view.window?.makeFirstResponder(view)
         #endif
     }
 
-    func setEnginePaused(_ paused: Bool) { paused_ = paused }
+    func setEnginePaused(_ paused: Bool) { isEnginePaused = paused }
 
     /// Fill the SpriteView with the full level height (classic side-scroll).
     /// Lemmings stay a fraction of a tile, so stretching the map to the
@@ -278,7 +284,7 @@ final class GameScene: SKScene {
         // made a level look broken/nonsensical after any real-world hitch.
         let dt = min(currentTime - lastUpdateTime, 0.25)
         lastUpdateTime = currentTime
-        guard !paused_ else { return }
+        guard !isEnginePaused else { return }
         accumulator += dt
         let step = 1.0 / engine.ticksPerSecond
         var ticked = false
@@ -306,7 +312,12 @@ final class GameScene: SKScene {
 
             let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y))
             let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
-            node.run(.move(to: target, duration: moveDuration))
+            // Keyed so each frame replaces the previous interpolation instead
+            // of stacking a new one: this runs at display rate (~60fps) while
+            // the engine only moves lemmings 20 times a second, so unkeyed
+            // runs piled up several actions per lemming all fighting over the
+            // same position.
+            node.run(.move(to: target, duration: moveDuration), withKey: "move")
             node.isHidden = (lem.state == .dead)
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
@@ -541,7 +552,21 @@ final class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = touches.first else { return }
         if !didDrag { handleTap(at: t.location(in: self)) }
+        endTouch()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        endTouch()
+    }
+
+    /// Edge-scroll and the hover ring follow the pointer, which on a touch
+    /// screen only exists while a finger is down. Leaving the last touch
+    /// position behind made a tap near either edge scroll the camera forever
+    /// and kept a hover ring stuck on a lemming nobody was pointing at.
+    private func endTouch() {
         dragStart = nil
+        lastPointer = nil
+        didDrag = false
     }
     #elseif os(macOS)
     override func mouseDown(with event: NSEvent) {
@@ -576,6 +601,52 @@ final class GameScene: SKScene {
     }
     #endif
 
+    // MARK: - Keyboard
+    //
+    // `1`-`8` pick a skill in panel order, `-`/`=` trim the release rate,
+    // `F` toggles fast-forward and Space pauses — the same set the original
+    // bound to the function keys.
+
+    /// Returns false for keys this scene doesn't use, so they fall through to
+    /// the rest of the responder chain (menu shortcuts, ⌘Q, and so on).
+    private func handleKey(_ characters: String) -> Bool {
+        guard let key = characters.lowercased().first else { return false }
+        switch key {
+        case " ":
+            onTogglePause?()
+        case "f":
+            engine.toggleFastForward()
+        case "-", "_":
+            engine.changeReleaseRate(-1)
+        case "=", "+":
+            engine.changeReleaseRate(1)
+        case "1"..."8":
+            guard let slot = key.wholeNumberValue, LemSkill.allCases.indices.contains(slot - 1) else {
+                return false
+            }
+            engine.selectSkill(LemSkill.allCases[slot - 1])
+        default:
+            return false
+        }
+        return true
+    }
+
+    #if os(macOS)
+    override func keyDown(with event: NSEvent) {
+        guard let characters = event.charactersIgnoringModifiers, handleKey(characters) else {
+            return super.keyDown(with: event)
+        }
+    }
+    #else
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        let unhandled = presses.filter { press in
+            guard let characters = press.key?.charactersIgnoringModifiers else { return true }
+            return !handleKey(characters)
+        }
+        if !unhandled.isEmpty { super.pressesBegan(Set(unhandled), with: event) }
+    }
+    #endif
+
     private func handleTap(at point: CGPoint) {
         if let id = nearestLiving(to: point) {
             onLemmingTapped?(id)
@@ -596,7 +667,7 @@ final class GameScene: SKScene {
     }
 
     private func edgeScroll() {
-        guard !paused_, let p = lastPointer else { return }
+        guard !isEnginePaused, let p = lastPointer else { return }
         let half = size.width * gameCamera.xScale / 2
         let left = gameCamera.position.x - half
         let right = gameCamera.position.x + half

@@ -27,8 +27,13 @@ targets:
       path: Sources/Info-iOS.plist
       properties:
         UILaunchScreen: {}
+        # All four, otherwise the build warns that an app which doesn't
+        # require full screen must support every orientation. iPhone ignores
+        # upside-down anyway; on iPad it just means the level doesn't flip
+        # away when someone rotates the device.
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         CFBundleDisplayName: iLemmings
