@@ -34,26 +34,31 @@ enum TerrainRenderer {
         ) else { return SKTexture() }
 
         var rng = SeededGenerator(seed: seed)
+        let dirtBrown: (CGFloat, CGFloat, CGFloat) = (0.42, 0.24, 0.06)
+        let grassGreen: (CGFloat, CGFloat, CGFloat) = (0.26, 0.48, 0.14)
         let base: (CGFloat, CGFloat, CGFloat)
         let variance: CGFloat
         switch style {
-        case .dirt: base = (0.42, 0.24, 0.06); variance = 0.07
-        case .grassCap: base = (0.26, 0.48, 0.14); variance = 0.08
+        // A capped tile is still a dirt tile: only its top band is grass, so
+        // its base has to be the brown body. Using the green here made the
+        // whole tile green, which turned every exposed ledge into a solid
+        // green block instead of the grass-on-dirt edge below.
+        case .dirt, .grassCap: base = dirtBrown; variance = 0.07
         case .steel: base = (0.38, 0.40, 0.44); variance = 0.04
         case .trap: base = (0.55, 0.07, 0.05); variance = 0.06
         case .water: base = (0.12, 0.34, 0.58); variance = 0.05
         }
+
+        // y = 0 is the bottom of the CGContext, so the grass band is the top
+        // slice of the tile.
+        let grassLine = Int(Double(size) * 0.72)
 
         for y in 0..<size {
             for x in 0..<size {
                 if !isFilled(x: x, y: y, size: size, n: solidN, e: solidE, s: solidS, w: solidW, steel: style == .steel || style == .water) {
                     continue
                 }
-                let grassLine = Int(Double(size) * 0.72)
-                let useGrass = style == .grassCap && y >= grassLine
-                let baseCol = useGrass
-                    ? (0.26, 0.48, 0.14)
-                    : base
+                let baseCol = (style == .grassCap && y >= grassLine) ? grassGreen : base
                 let n = CGFloat.random(in: -variance...variance, using: &rng)
                 ctx.setFillColor(CGColor(
                     red: min(max(baseCol.0 + n, 0), 1),

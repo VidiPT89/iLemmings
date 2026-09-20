@@ -12,7 +12,7 @@ final class GameEngineTests: XCTestCase {
     ) -> LevelDefinition {
         LevelDefinition(
             id: "test",
-            nameKey: "test",
+            nameKey: .levelGreenHills,
             pack: .fun,
             rows: rows,
             totalLemmings: total,
@@ -22,6 +22,8 @@ final class GameEngineTests: XCTestCase {
             skillCounts: skills
         )
     }
+
+    private func isSolid(_ t: Tile) -> Bool { t == .dirt || t == .steel }
 
     func testStarsThresholds() {
         let level = tinyLevel(rows: ["E..X", "####"])
@@ -106,6 +108,67 @@ final class GameEngineTests: XCTestCase {
         XCTAssertTrue(blocked)
         XCTAssertTrue(engine.lemmings.contains { $0.state == .blocking })
         XCTAssertGreaterThanOrEqual(engine.spawnedCount, 2)
+    }
+
+    /// A blocker whose footing is mined away falls, like the original — it
+    /// does not hang in mid-air still turning walkers around.
+    func testBlockerFallsWhenItsFootingIsMinedAway() {
+        let level = tinyLevel(
+            rows: [
+                "E.........",
+                "##########",
+                "##########",
+                "SSSSSSSSSS",
+            ],
+            skills: [.blocker: 1, .miner: 1],
+            total: 2,
+            need: 1,
+            time: 120
+        )
+        let engine = GameEngine(level: level)
+        var blocker: Lemming?
+        var minerAssigned = false
+
+        for _ in 0..<600 {
+            engine.tick()
+
+            if blocker == nil,
+               let lem = engine.lemmings.first(where: { $0.state == .walking && Int($0.x.rounded()) >= 5 }) {
+                engine.selectSkill(.blocker)
+                engine.applySelectedSkill(to: lem.id)
+                blocker = engine.lemmings.first { $0.id == lem.id }
+                continue
+            }
+
+            // A Miner one tile behind the blocker clears the tile the blocker
+            // is standing on with its very first stroke.
+            if let blocker, !minerAssigned {
+                let target = engine.lemmings.first {
+                    $0.id != blocker.id && $0.state == .walking && $0.facingRight
+                        && $0.y == blocker.y && Int($0.x.rounded()) == Int(blocker.x.rounded()) - 1
+                }
+                if let target {
+                    engine.selectSkill(.miner)
+                    engine.applySelectedSkill(to: target.id)
+                    minerAssigned = true
+                }
+            }
+
+            if minerAssigned, let blocker, !isSolid(engine.tile(blocker.y + 1, Int(blocker.x.rounded()))) {
+                break
+            }
+        }
+
+        guard let blocker else { return XCTFail("no blocker was assigned") }
+        XCTAssertTrue(minerAssigned, "the miner was never assigned behind the blocker")
+        XCTAssertFalse(
+            isSolid(engine.tile(blocker.y + 1, Int(blocker.x.rounded()))),
+            "the miner never cleared the blocker's footing"
+        )
+
+        engine.tick()
+        let after = engine.lemmings.first { $0.id == blocker.id }
+        XCTAssertNotEqual(after?.state, .blocking, "blocker kept blocking with no ground under it")
     }
 
     func testClimberScalesATallWall() {

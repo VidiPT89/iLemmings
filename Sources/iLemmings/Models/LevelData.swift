@@ -32,7 +32,7 @@ enum LevelLibrary {
 
         return LevelDefinition(
             id: "level1",
-            nameKey: "Green Hills",
+            nameKey: .levelGreenHills,
             pack: .fun,
             rows: rows,
             totalLemmings: 10,
@@ -57,7 +57,7 @@ enum LevelLibrary {
         let rows = [air, entranceRow, walk, floor]
         return LevelDefinition(
             id: "level2",
-            nameKey: "Copper Shaft",
+            nameKey: .levelCopperShaft,
             pack: .tricky,
             rows: rows,
             totalLemmings: 12,
@@ -79,7 +79,7 @@ enum LevelLibrary {
         let rows = [air, air, entranceRow, air, air, walk, traps, steelFloor]
         return LevelDefinition(
             id: "level3",
-            nameKey: "Ember Gauntlet",
+            nameKey: .levelEmberGauntlet,
             pack: .taxing,
             rows: rows,
             totalLemmings: 14,
@@ -106,7 +106,7 @@ enum LevelLibrary {
         rows.append(bed)
         return LevelDefinition(
             id: "level4",
-            nameKey: "Obsidian Descent",
+            nameKey: .levelObsidianDescent,
             pack: .mayhem,
             rows: rows,
             totalLemmings: 16,
@@ -133,7 +133,7 @@ enum LevelLibrary {
         rows.append(bed)
         return LevelDefinition(
             id: "level5",
-            nameKey: "Still Water",
+            nameKey: .levelStillWater,
             pack: .fun,
             rows: rows,
             totalLemmings: 10,
@@ -160,7 +160,7 @@ enum LevelLibrary {
         rows.append(contentsOf: [walk, floor])
         return LevelDefinition(
             id: "level6",
-            nameKey: "Iron Gate",
+            nameKey: .levelIronGate,
             pack: .tricky,
             rows: rows,
             totalLemmings: 12,
@@ -185,7 +185,7 @@ enum LevelLibrary {
         rows.append(bed)
         return LevelDefinition(
             id: "level7",
-            nameKey: "Sunken Plug",
+            nameKey: .levelSunkenPlug,
             pack: .taxing,
             rows: rows,
             totalLemmings: 14,
@@ -211,7 +211,7 @@ enum LevelLibrary {
         rows.append(floor)
         return LevelDefinition(
             id: "level8",
-            nameKey: "Last Bridge",
+            nameKey: .levelLastBridge,
             pack: .mayhem,
             rows: rows,
             totalLemmings: 16,

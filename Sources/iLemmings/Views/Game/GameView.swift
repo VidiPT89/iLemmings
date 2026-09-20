@@ -39,31 +39,6 @@ struct GameView: View {
                             scene.resizeViewport(to: newSize)
                         }
                 }
-                .focusable()
-                .onKeyPress(.space) {
-                    isPaused.toggle()
-                    return .handled
-                }
-                .onKeyPress("f") {
-                    engine.toggleFastForward()
-                    return .handled
-                }
-                .onKeyPress("-") {
-                    engine.changeReleaseRate(-1)
-                    return .handled
-                }
-                .onKeyPress("=") {
-                    engine.changeReleaseRate(1)
-                    return .handled
-                }
-                .onKeyPress("1") { engine.selectSkill(.climber); return .handled }
-                .onKeyPress("2") { engine.selectSkill(.floater); return .handled }
-                .onKeyPress("3") { engine.selectSkill(.bomber); return .handled }
-                .onKeyPress("4") { engine.selectSkill(.blocker); return .handled }
-                .onKeyPress("5") { engine.selectSkill(.builder); return .handled }
-                .onKeyPress("6") { engine.selectSkill(.basher); return .handled }
-                .onKeyPress("7") { engine.selectSkill(.miner); return .handled }
-                .onKeyPress("8") { engine.selectSkill(.digger); return .handled }
 
                 BottomControlPanel(engine: engine, isPaused: $isPaused)
             }
@@ -90,10 +65,11 @@ struct GameView: View {
         }
         .onChange(of: engine.isWon) { _, newValue in
             guard newValue else { return }
-            earnedStars = StarsStore.record(
-                level.stars(saved: engine.savedCount, secondsRemaining: engine.secondsRemaining),
-                for: level.id
-            )
+            // Show what this run earned, not the best ever stored for the
+            // level — `record` returns the running best, so replaying a level
+            // you'd already 3-starred used to claim 3 stars for a 1-star run.
+            earnedStars = level.stars(saved: engine.savedCount, secondsRemaining: engine.secondsRemaining)
+            StarsStore.record(earnedStars, for: level.id)
             sound.play(.win)
             Haptics.levelComplete()
             showResult = true
@@ -104,12 +80,7 @@ struct GameView: View {
             Haptics.levelFailed()
             showResult = true
         }
-        .onAppear {
-            scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
-            scene.onExplosion = { sound.play(.explode) }
-            scene.onSplat = { sound.play(.splat) }
-            scene.onDrown = { sound.play(.drown) }
-        }
+        .onAppear { bindCallbacks(to: scene) }
         .sheet(isPresented: $showResult) {
             ResultView(
                 won: engine.isWon,
@@ -128,13 +99,21 @@ struct GameView: View {
         #endif
     }
 
-    private func restart() {
-        engine.reset()
-        scene = GameScene(engine: engine)
+    /// A restart swaps in a fresh scene, which needs the same wiring as the
+    /// first one — keeping it in one place so the two can't drift apart.
+    private func bindCallbacks(to scene: GameScene) {
         scene.onLemmingTapped = { id in engine.applySelectedSkill(to: id) }
         scene.onExplosion = { sound.play(.explode) }
         scene.onSplat = { sound.play(.splat) }
         scene.onDrown = { sound.play(.drown) }
+        scene.onTogglePause = { isPaused.toggle() }
+    }
+
+    private func restart() {
+        engine.reset()
+        let fresh = GameScene(engine: engine)
+        bindCallbacks(to: fresh)
+        scene = fresh
         isPaused = false
         showResult = false
         earnedStars = 0
