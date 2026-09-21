@@ -1,51 +1,49 @@
 import SpriteKit
 
-/// Deterministic RNG so the procedural terrain textures look the same on
-/// every launch instead of re-rolling their speckle pattern each time.
-struct SeededGenerator: RandomNumberGenerator {
-    private var state: UInt64
-    init(seed: Int) { state = UInt64(bitPattern: Int64(seed)) &+ 0x9E3779B97F4A7C15 }
-    mutating func next() -> UInt64 {
-        state ^= state << 13
-        state ^= state >> 7
-        state ^= state << 17
-        return state
-    }
-}
-
 final class GameScene: SKScene {
     let engine: GameEngine
-    private let tileSize: CGFloat = 28
+    let tileSize: CGFloat = 28
     private let minZoom: CGFloat = 0.15
     private let maxZoom: CGFloat = 8.0
 
-    private var terrainNode = SKNode()
+    // Members below without `private` are the ones the `GameSceneInput` and
+    // `GameSceneTerrain` extensions reach for: Swift's `private` is
+    // file-scoped, so splitting the class across files makes them internal
+    // by necessity, not by design.
+    var terrainNode = SKNode()
     /// One optional node per cell, keyed by `row * width + col`. Updated
     /// incrementally (see `updateTerrain()`) instead of rebuilding the whole
     /// grid every time a single tile changes — digging used to rebuild
     /// hundreds of `SKShapeNode`s on every tick, causing visible stutter.
-    private var terrainNodes: [Int: SKSpriteNode] = [:]
-    private var lastGrid: [[Tile]] = []
+    var terrainNodes: [Int: SKSpriteNode] = [:]
+    var lastGrid: [[Tile]] = []
     private var lemmingNodes: [Int: SKSpriteNode] = [:]
     private var lastUpdateTime: TimeInterval = 0
     private var accumulator: TimeInterval = 0
-    private var isEnginePaused = false
+    var isEnginePaused = false
     private var previousStates: [Int: LemState] = [:]
     private var tickCounter = 0
 
-    private let gameCamera = SKCameraNode()
-    private var worldWidth: CGFloat { CGFloat(engine.width) * tileSize }
-    private var worldHeight: CGFloat { CGFloat(engine.height) * tileSize }
-    private var dragStart: CGPoint?
-    private var didDrag = false
+    let gameCamera = SKCameraNode()
+    var worldWidth: CGFloat { CGFloat(engine.width) * tileSize }
+    var worldHeight: CGFloat { CGFloat(engine.height) * tileSize }
+    var dragStart: CGPoint?
+    var didDrag = false
 
     var onLemmingTapped: ((Int) -> Void)?
     var onExplosion: (() -> Void)?
     var onSplat: (() -> Void)?
     var onDrown: (() -> Void)?
     var onTogglePause: (() -> Void)?
-    private var lastPointer: CGPoint?
-    private var hoverRing = SKShapeNode(circleOfRadius: 5)
+    /// Which columns of the level are on screen, so the minimap can draw the
+    /// viewport box the original has.
+    var onViewportChanged: ((ClosedRange<Double>) -> Void)?
+    private var lastReportedViewport: ClosedRange<Double>?
+    var lastPointer: CGPoint?
+    /// The original's cursor is a hollow box that snaps around the lemming
+    /// under the pointer — the thing that tells you *which* one is about to
+    /// get the skill. A small circle floating near it never did that job.
+    var hoverRing = SKShapeNode()
 
     init(engine: GameEngine) {
         self.engine = engine
@@ -75,9 +73,12 @@ final class GameScene: SKScene {
 
         camera = gameCamera
         addChild(gameCamera)
-        hoverRing.strokeColor = SKColor(red: 1, green: 0.85, blue: 0.2, alpha: 0.9)
+        let box = tileSize * 0.9
+        hoverRing.path = CGPath(rect: CGRect(x: -box / 2, y: 0, width: box, height: box), transform: nil)
+        hoverRing.strokeColor = SKColor(red: 1, green: 0.95, blue: 0.35, alpha: 1)
         hoverRing.fillColor = .clear
-        hoverRing.lineWidth = 1
+        hoverRing.lineWidth = max(1, tileSize * 0.05)
+        hoverRing.isAntialiased = false
         hoverRing.zPosition = 12
         hoverRing.isHidden = true
         addChild(hoverRing)
@@ -125,154 +126,6 @@ final class GameScene: SKScene {
         gameCamera.position.x = clampedCameraX(gameCamera.position.x + delta)
     }
 
-    // MARK: - Background & terrain
-    //
-    // The original DOS Lemmings renders each level against a flat, dark
-    // backdrop with grainy, dithered terrain sprites — not a cheerful blue
-    // sky and flat-color blocks. This tries to get closer to that: a solid
-    // dark background per level pack, and speckled/noisy tile textures
-    // instead of flat fills.
-
-    private func makeBackground() -> SKSpriteNode {
-        let color: SKColor
-        switch engine.level.pack {
-        case .fun: color = SKColor(red: 0.05, green: 0.08, blue: 0.10, alpha: 1)
-        case .tricky: color = SKColor(red: 0.09, green: 0.06, blue: 0.10, alpha: 1)
-        case .taxing: color = SKColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 1)
-        case .mayhem: color = SKColor(red: 0.10, green: 0.03, blue: 0.03, alpha: 1)
-        }
-        let bg = SKSpriteNode(color: color, size: CGSize(width: 20_000, height: 20_000))
-        bg.position = CGPoint(x: worldWidth / 2, y: worldHeight / 2)
-        bg.zPosition = -10
-        return bg
-    }
-
-    private func flipRow(_ row: Int) -> CGFloat {
-        CGFloat(engine.height - 1 - row) * tileSize
-    }
-
-    private func isTerrainSolid(_ tile: Tile) -> Bool {
-        tile == .dirt || tile == .steel
-    }
-
-    /// The classic hatch: a distinct metal doorway lemmings visibly walk out
-    /// of, not just a same-as-terrain speckled tile. Previously the entrance
-    /// tile used the same near-black speckle texture as the background,
-    /// so it was effectively invisible — lemmings appeared to spawn out of
-    /// nowhere. Built once (the entrance never moves), not through the
-    /// per-tick terrain diffing used for destructible tiles.
-    private func makeEntranceHatch() -> SKNode {
-        let node = SKNode()
-        node.zPosition = 5
-        node.position = CGPoint(
-            x: CGFloat(engine.entranceColumn) * tileSize + tileSize / 2,
-            y: flipRow(engine.entranceRow) + tileSize / 2
-        )
-
-        let frameSize = CGSize(width: tileSize * 1.6, height: tileSize * 1.6)
-        let frame = SKShapeNode(rectOf: frameSize, cornerRadius: 3)
-        frame.fillColor = SKColor(red: 0.30, green: 0.32, blue: 0.36, alpha: 1)
-        frame.strokeColor = SKColor(red: 0.62, green: 0.66, blue: 0.70, alpha: 1)
-        frame.lineWidth = 2
-        frame.position = CGPoint(x: 0, y: tileSize * 0.15)
-        node.addChild(frame)
-
-        let opening = SKShapeNode(rectOf: CGSize(width: tileSize * 1.1, height: tileSize * 1.0))
-        opening.fillColor = .black
-        opening.strokeColor = .clear
-        opening.position = CGPoint(x: 0, y: tileSize * 0.05)
-        frame.addChild(opening)
-
-        let light = SKShapeNode(circleOfRadius: 2.5)
-        light.fillColor = .systemGreen
-        light.strokeColor = .clear
-        light.position = CGPoint(x: 0, y: frameSize.height / 2 - 5)
-        light.run(.repeatForever(.sequence([.fadeAlpha(to: 0.3, duration: 0.6), .fadeAlpha(to: 1, duration: 0.6)])))
-        frame.addChild(light)
-
-        return node
-    }
-
-    private func makeExitHouse(row: Int, col: Int) -> SKNode {
-        let node = SKNode()
-        node.zPosition = 4
-        node.position = CGPoint(
-            x: CGFloat(col) * tileSize + tileSize / 2,
-            y: flipRow(row) + tileSize / 2
-        )
-        let arch = SKShapeNode(rectOf: CGSize(width: tileSize * 1.8, height: tileSize * 2.1), cornerRadius: 4)
-        arch.fillColor = SKColor(red: 0.55, green: 0.18, blue: 0.12, alpha: 1)
-        arch.strokeColor = SKColor(red: 0.85, green: 0.65, blue: 0.20, alpha: 1)
-        arch.lineWidth = 2
-        arch.position = CGPoint(x: 0, y: tileSize * 0.4)
-        node.addChild(arch)
-        let door = SKShapeNode(rectOf: CGSize(width: tileSize * 0.9, height: tileSize * 1.15), cornerRadius: 2)
-        door.fillColor = SKColor(red: 0.12, green: 0.08, blue: 0.05, alpha: 1)
-        door.strokeColor = .clear
-        door.position = CGPoint(x: 0, y: tileSize * 0.05)
-        arch.addChild(door)
-        let glow = SKShapeNode(circleOfRadius: 3)
-        glow.fillColor = SKColor(red: 1, green: 0.82, blue: 0.25, alpha: 1)
-        glow.strokeColor = .clear
-        glow.position = CGPoint(x: 0, y: tileSize * 0.85)
-        glow.run(.repeatForever(.sequence([.fadeAlpha(to: 0.35, duration: 0.5), .fadeAlpha(to: 1, duration: 0.5)])))
-        arch.addChild(glow)
-        return node
-    }
-
-    /// Only touches the cells that actually changed since last frame —
-    /// digging/bashing/mining edit one or two tiles per tick, so rebuilding
-    /// the entire grid's shape nodes every time was wasted work that caused
-    /// visible stutter on every dig.
-    private func updateTerrain() {
-        // Cells whose tile actually changed, plus the cell directly below
-        // each of them (removing dirt can turn the tile below into a
-        // grass-capped one — see `fillColor(for:row:col:)`).
-        var cellsToRefresh = Set<Int>()
-        for r in 0..<engine.height {
-            for c in 0..<engine.width where engine.tile(r, c) != lastGrid[r][c] {
-                cellsToRefresh.insert(r * engine.width + c)
-                for (dr, dc) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
-                    let nr = r + dr, nc = c + dc
-                    if nr >= 0, nr < engine.height, nc >= 0, nc < engine.width {
-                        cellsToRefresh.insert(nr * engine.width + nc)
-                    }
-                }
-            }
-        }
-
-        for key in cellsToRefresh {
-            let r = key / engine.width
-            let c = key % engine.width
-            let tile = engine.tile(r, c)
-
-            guard let terrainStyle = TerrainRenderer.style(for: tile, above: engine.tile(r - 1, c)) else {
-                terrainNodes[key]?.removeFromParent()
-                terrainNodes.removeValue(forKey: key)
-                continue
-            }
-
-            let texture = TerrainRenderer.texture(
-                style: terrainStyle,
-                solidN: isTerrainSolid(engine.tile(r - 1, c)),
-                solidE: isTerrainSolid(engine.tile(r, c + 1)),
-                solidS: isTerrainSolid(engine.tile(r + 1, c)),
-                solidW: isTerrainSolid(engine.tile(r, c - 1)),
-                seed: r * 97 + c * 13 + terrainStyle.hashValue
-            )
-
-            if let existing = terrainNodes[key] {
-                existing.texture = texture
-            } else {
-                let node = SKSpriteNode(texture: texture, size: CGSize(width: tileSize, height: tileSize))
-                node.position = CGPoint(x: CGFloat(c) * tileSize + tileSize / 2, y: flipRow(r) + tileSize / 2)
-                terrainNode.addChild(node)
-                terrainNodes[key] = node
-            }
-        }
-        lastGrid = engine.grid
-    }
-
     override func update(_ currentTime: TimeInterval) {
         if lastUpdateTime == 0 { lastUpdateTime = currentTime }
         // Clamp dt: after any stall (app backgrounded, a dropped-frame hitch,
@@ -297,27 +150,52 @@ final class GameScene: SKScene {
             accumulator -= step
         }
         if ticked { updateTerrain() }
-        syncLemmingNodes()
+        syncLemmingNodes(didTick: ticked)
         edgeScroll()
         updateHover()
+        reportViewport()
     }
 
-    private func syncLemmingNodes() {
+    /// Fires only when the visible span actually moves, rather than on every
+    /// frame: this drives SwiftUI state, and a 60-per-second publish would
+    /// re-render the whole control panel for nothing.
+    private func reportViewport() {
+        let half = Double(size.width * gameCamera.xScale / 2)
+        let centre = Double(gameCamera.position.x / tileSize)
+        let spread = half / Double(tileSize)
+        let range = (centre - spread)...(centre + spread)
+        if let last = lastReportedViewport,
+           abs(last.lowerBound - range.lowerBound) < 0.25,
+           abs(last.upperBound - range.upperBound) < 0.25 {
+            return
+        }
+        lastReportedViewport = range
+        onViewportChanged?(range)
+    }
+
+    /// `didTick` says whether the engine actually advanced this frame. The
+    /// move action is only (re)started on a tick: SpriteKit evaluates actions
+    /// *after* `update(_:)`, so re-running a keyed move every frame replaced
+    /// the action before it was ever evaluated and the lemmings never left
+    /// their spawn position — they all sat at the scene origin while the
+    /// simulation (and the minimap) ran on without them.
+    private func syncLemmingNodes(didTick: Bool) {
         var seen = Set<Int>()
         for lem in engine.lemmings {
             seen.insert(lem.id)
-            let node = lemmingNodes[lem.id] ?? makeLemmingNode(for: lem)
+            let existing = lemmingNodes[lem.id]
+            let node = existing ?? makeLemmingNode(for: lem)
             lemmingNodes[lem.id] = node
-            if node.parent == nil { addChild(node) }
 
             let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y))
-            let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
-            // Keyed so each frame replaces the previous interpolation instead
-            // of stacking a new one: this runs at display rate (~60fps) while
-            // the engine only moves lemmings 20 times a second, so unkeyed
-            // runs piled up several actions per lemming all fighting over the
-            // same position.
-            node.run(.move(to: target, duration: moveDuration), withKey: "move")
+            if existing == nil {
+                // A brand-new lemming starts at the hatch, not at the origin.
+                node.position = target
+                addChild(node)
+            } else if didTick {
+                let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
+                node.run(.move(to: target, duration: moveDuration), withKey: "move")
+            }
             node.isHidden = (lem.state == .dead)
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
@@ -418,39 +296,31 @@ final class GameScene: SKScene {
     private func makeLemmingNode(for lem: Lemming) -> SKSpriteNode {
         let node = SKSpriteNode(texture: LemmingSprites.stand)
         // Terrain tiles are the map unit. Classic lemmings are much smaller
-        // than a block (about half a tile wide, under one tile tall).
-        node.size = CGSize(width: tileSize * 0.48, height: tileSize * 0.72)
+        // than a block (about half a tile wide, under one tile tall). The art
+        // canvas is square with a margin for the umbrella/pickaxe/brick, so
+        // the node is square too and the *body* inside it lands on those
+        // proportions.
+        node.size = CGSize(width: tileSize * 0.84, height: tileSize * 0.84)
         node.anchorPoint = CGPoint(x: 0.5, y: 0)
         node.name = "lem-\(lem.id)"
         node.zPosition = 10
-
-        let badge = SKShapeNode(circleOfRadius: 2.2)
-        badge.name = "badge"
-        badge.strokeColor = .black
-        badge.lineWidth = 0.4
-        badge.position = CGPoint(x: 0, y: node.size.height + 3)
-        badge.isHidden = true
-        node.addChild(badge)
 
         let countLabel = SKLabelNode(fontNamed: "Menlo-Bold")
         countLabel.name = "countdown"
         countLabel.fontSize = 8
         countLabel.fontColor = SKColor(red: 0.35, green: 0.95, blue: 0.35, alpha: 1)
         countLabel.verticalAlignmentMode = .center
-        countLabel.position = CGPoint(x: 0, y: node.size.height + 5)
+        countLabel.position = CGPoint(x: 0, y: node.size.height + 3)
         countLabel.zPosition = 2
         node.addChild(countLabel)
 
         return node
     }
 
-    /// Picks the right pixel-art frame/animation and skill badge for the
-    /// lemming's current state, without recoloring the sprite itself — the
-    /// green hair / blue overalls silhouette must always read as a lemming.
+    /// Picks the animation for the lemming's current job. Nothing here
+    /// recolours the sprite — the green hair / blue overalls silhouette must
+    /// always read as a lemming, and the job is told by what it is *doing*.
     private func updateAppearance(_ node: SKSpriteNode, for lem: Lemming) {
-        let badge = node.childNode(withName: "badge") as? SKShapeNode
-        badge?.isHidden = true
-        node.yScale = 1
         let countLabel = node.childNode(withName: "countdown") as? SKLabelNode
         if let digit = lem.countdownDigit {
             countLabel?.text = "\(digit)"
@@ -460,232 +330,37 @@ final class GameScene: SKScene {
             countLabel?.isHidden = true
         }
 
+        let (name, animation): (String, SKAction?)
         switch lem.state {
-        case .walking:
-            if node.action(forKey: "walk") == nil {
-                node.run(.repeatForever(LemmingSprites.walkAnimation), withKey: "walk")
-            }
-            if lem.hasClimber || lem.hasFloater {
-                badge?.isHidden = false
-                badge?.fillColor = lem.hasClimber ? .systemGreen : .cyan
-            }
-            return
-
-        case .climbing:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.climb
-
-        case .blocking:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.block
-            badge?.isHidden = false
-            badge?.fillColor = .systemRed
-
-        case .building:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            badge?.isHidden = false
-            badge?.fillColor = .systemYellow
-
-        case .basher, .miner, .digger:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            badge?.isHidden = false
-            badge?.fillColor = .brown
-
-        case .shrugging:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            badge?.isHidden = false
-            badge?.fillColor = .systemYellow
-
-        case .splatting:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            node.yScale = 0.4
-
-        case .drowning:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            node.yScale = 0.55
-            badge?.isHidden = false
-            badge?.fillColor = .cyan
-
-        case .ohNo:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
-            badge?.isHidden = false
-            badge?.fillColor = .systemPink
-
-        case .floating:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.float
-
-        case .falling, .saved, .dead:
-            node.removeAction(forKey: "walk")
-            node.texture = LemmingSprites.stand
+        case .walking:   (name, animation) = ("walk", LemmingSprites.walk)
+        case .falling:   (name, animation) = ("fall", LemmingSprites.fall)
+        case .floating:  (name, animation) = ("float", LemmingSprites.float)
+        case .climbing:  (name, animation) = ("climb", LemmingSprites.climb)
+        case .digger:    (name, animation) = ("dig", LemmingSprites.dig)
+        case .basher:    (name, animation) = ("bash", LemmingSprites.bash)
+        case .miner:     (name, animation) = ("mine", LemmingSprites.mine)
+        case .building:  (name, animation) = ("build", LemmingSprites.build)
+        case .blocking:  (name, animation) = ("block", LemmingSprites.block)
+        case .shrugging: (name, animation) = ("shrug", LemmingSprites.shrug)
+        case .ohNo:      (name, animation) = ("ohno", LemmingSprites.ohNo)
+        case .drowning:  (name, animation) = ("drown", LemmingSprites.drown)
+        case .splatting: (name, animation) = ("splat", nil)
+        case .saved, .dead: (name, animation) = ("stand", nil)
         }
-    }
 
-    // MARK: - Input: tap assigns a skill, drag pans the camera
+        // Keyed by *name*, not by comparing `LemState`: several states carry
+        // a countdown in their associated value and so compare unequal on
+        // every tick, which would restart the cycle from frame one forever
+        // and leave every working lemming frozen on its first frame.
+        guard node.userData?["anim"] as? String != name else { return }
+        if node.userData == nil { node.userData = NSMutableDictionary() }
+        node.userData?["anim"] = name
 
-    #if os(iOS) || os(tvOS)
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let t = touches.first else { return }
-        dragStart = t.location(in: self)
-        lastPointer = dragStart
-        didDrag = false
-    }
-
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let t = touches.first, let start = dragStart else { return }
-        let location = t.location(in: self)
-        lastPointer = location
-        let delta = start.x - location.x
-        if abs(delta) > 2 {
-            didDrag = true
-            pan(bySceneDelta: delta)
-            dragStart = location
+        node.removeAction(forKey: "anim")
+        if let animation {
+            node.run(animation, withKey: "anim")
+        } else {
+            node.texture = (name == "splat") ? LemmingSprites.splat : LemmingSprites.stand
         }
-    }
-
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let t = touches.first else { return }
-        if !didDrag { handleTap(at: t.location(in: self)) }
-        endTouch()
-    }
-
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        endTouch()
-    }
-
-    /// Edge-scroll and the hover ring follow the pointer, which on a touch
-    /// screen only exists while a finger is down. Leaving the last touch
-    /// position behind made a tap near either edge scroll the camera forever
-    /// and kept a hover ring stuck on a lemming nobody was pointing at.
-    private func endTouch() {
-        dragStart = nil
-        lastPointer = nil
-        didDrag = false
-    }
-    #elseif os(macOS)
-    override func mouseDown(with event: NSEvent) {
-        dragStart = event.location(in: self)
-        lastPointer = dragStart
-        didDrag = false
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        guard let start = dragStart else { return }
-        let location = event.location(in: self)
-        lastPointer = location
-        let delta = start.x - location.x
-        if abs(delta) > 2 {
-            didDrag = true
-            pan(bySceneDelta: delta)
-            dragStart = location
-        }
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        if !didDrag { handleTap(at: event.location(in: self)) }
-        dragStart = nil
-    }
-
-    override func mouseMoved(with event: NSEvent) {
-        lastPointer = event.location(in: self)
-    }
-
-    override func scrollWheel(with event: NSEvent) {
-        pan(bySceneDelta: -event.scrollingDeltaX)
-    }
-    #endif
-
-    // MARK: - Keyboard
-    //
-    // `1`-`8` pick a skill in panel order, `-`/`=` trim the release rate,
-    // `F` toggles fast-forward and Space pauses — the same set the original
-    // bound to the function keys.
-
-    /// Returns false for keys this scene doesn't use, so they fall through to
-    /// the rest of the responder chain (menu shortcuts, ⌘Q, and so on).
-    private func handleKey(_ characters: String) -> Bool {
-        guard let key = characters.lowercased().first else { return false }
-        switch key {
-        case " ":
-            onTogglePause?()
-        case "f":
-            engine.toggleFastForward()
-        case "-", "_":
-            engine.changeReleaseRate(-1)
-        case "=", "+":
-            engine.changeReleaseRate(1)
-        case "1"..."8":
-            guard let slot = key.wholeNumberValue, LemSkill.allCases.indices.contains(slot - 1) else {
-                return false
-            }
-            engine.selectSkill(LemSkill.allCases[slot - 1])
-        default:
-            return false
-        }
-        return true
-    }
-
-    #if os(macOS)
-    override func keyDown(with event: NSEvent) {
-        guard let characters = event.charactersIgnoringModifiers, handleKey(characters) else {
-            return super.keyDown(with: event)
-        }
-    }
-    #else
-    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { press in
-            guard let characters = press.key?.charactersIgnoringModifiers else { return true }
-            return !handleKey(characters)
-        }
-        if !unhandled.isEmpty { super.pressesBegan(Set(unhandled), with: event) }
-    }
-    #endif
-
-    private func handleTap(at point: CGPoint) {
-        if let id = nearestLiving(to: point) {
-            onLemmingTapped?(id)
-        }
-    }
-
-    private func nearestLiving(to point: CGPoint) -> Int? {
-        let radius = tileSize * 1.15
-        var best: (Int, CGFloat)?
-        for lem in engine.lemmings where lem.canReceiveSkill {
-            let p = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.35)
-            let d = hypot(p.x - point.x, p.y - point.y)
-            if d <= radius, best == nil || d < best!.1 {
-                best = (lem.id, d)
-            }
-        }
-        return best?.0
-    }
-
-    private func edgeScroll() {
-        guard !isEnginePaused, let p = lastPointer else { return }
-        let half = size.width * gameCamera.xScale / 2
-        let left = gameCamera.position.x - half
-        let right = gameCamera.position.x + half
-        let band = tileSize * 1.4
-        if p.x < left + band {
-            pan(bySceneDelta: -2.4)
-        } else if p.x > right - band {
-            pan(bySceneDelta: 2.4)
-        }
-    }
-
-    private func updateHover() {
-        guard let p = lastPointer, let id = nearestLiving(to: p),
-              let lem = engine.lemmings.first(where: { $0.id == id }) else {
-            hoverRing.isHidden = true
-            return
-        }
-        hoverRing.isHidden = false
-        hoverRing.position = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.38)
     }
 }

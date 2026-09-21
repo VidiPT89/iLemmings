@@ -25,23 +25,6 @@ final class GameEngine: ObservableObject {
     private var nukeArmed = false
     private var nextNukeIndex = 0
     private let entrance: (row: Int, col: Int)
-    private let maxSafeFall = 6
-    private let bomberFuseTicks = 100
-    private let ohNoTicks = 16
-    private let fallTicksPerStep = 4
-    private let floatTicksPerStep = 8
-    private let climbTicksPerStep = 8
-    /// Derived from the original's actual source (LemmingsJS's ActionWalkSystem):
-    /// it moves 1px/tick at a 60ms tick (~16.67 ticks/sec) — about 0.6s to
-    /// cross one lemming-height of ground. At this engine's 20 ticks/sec,
-    /// one tile every 12 ticks lands on the same ~0.6s pace. Also used for
-    /// Digger, whose original cadence (1 row/8 ticks ≈ 0.48s) is close to
-    /// walking speed.
-    private let walkTicksPerStep = 12
-    /// Basher/Miner/Builder tunnel through solid ground far slower than a
-    /// lemming walks — the original's ActionBashSystem/ActionBuildSystem
-    /// only advance once every 16-24 ticks (vs. walking's every tick).
-    private let workTicksPerStep = 24
 
     var ticksPerSecond: Double { 20 }
 
@@ -150,7 +133,7 @@ final class GameEngine: ObservableObject {
             lem.state = .digger
         case .bomber:
             guard lem.countdownTicks == 0 else { return }
-            lem.countdownTicks = bomberFuseTicks
+            lem.countdownTicks = GameTuning.bomberFuseTicks
         }
 
         lemmings[idx] = lem
@@ -203,7 +186,7 @@ final class GameEngine: ObservableObject {
             nextNukeIndex += 1
             guard lemmings[i].isAlive, lemmings[i].countdownTicks == 0 else { continue }
             if case .ohNo = lemmings[i].state { continue }
-            lemmings[i].countdownTicks = bomberFuseTicks
+            lemmings[i].countdownTicks = GameTuning.bomberFuseTicks
             return
         }
     }
@@ -248,7 +231,7 @@ final class GameEngine: ObservableObject {
         if lem.countdownTicks > 0 {
             lem.countdownTicks -= 1
             if lem.countdownTicks == 0 {
-                lem.state = .ohNo(ticksLeft: ohNoTicks)
+                lem.state = .ohNo(ticksLeft: GameTuning.ohNoTicks)
                 return
             }
         }
@@ -283,11 +266,11 @@ final class GameEngine: ObservableObject {
         switch lem.state {
         case .falling:
             lem.actionProgress += 1
-            guard lem.actionProgress >= fallTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.fallTicksPerStep else { break }
             lem.actionProgress = 0
             let below = lem.y + 1
             if isSolid(tile(below, col)) {
-                if lem.fallDistance > maxSafeFall && !lem.hasFloater {
+                if lem.fallDistance > GameTuning.maxSafeFall && !lem.hasFloater {
                     splat(&lem)
                 } else {
                     lem.state = .walking
@@ -301,7 +284,7 @@ final class GameEngine: ObservableObject {
 
         case .floating:
             lem.actionProgress += 1
-            guard lem.actionProgress >= floatTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.floatTicksPerStep else { break }
             lem.actionProgress = 0
             let below = lem.y + 1
             if isSolid(tile(below, col)) {
@@ -313,7 +296,7 @@ final class GameEngine: ObservableObject {
 
         case .walking:
             lem.actionProgress += 1
-            if lem.actionProgress >= walkTicksPerStep {
+            if lem.actionProgress >= GameTuning.walkTicksPerStep {
                 lem.actionProgress = 0
                 walk(&lem)
             }
@@ -332,7 +315,7 @@ final class GameEngine: ObservableObject {
 
         case .building(let steps):
             lem.actionProgress += 1
-            guard lem.actionProgress >= workTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
@@ -363,7 +346,7 @@ final class GameEngine: ObservableObject {
 
         case .basher:
             lem.actionProgress += 1
-            guard lem.actionProgress >= workTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
@@ -379,7 +362,7 @@ final class GameEngine: ObservableObject {
 
         case .miner:
             lem.actionProgress += 1
-            guard lem.actionProgress >= workTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.workTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let frontCol = col + dir
@@ -394,7 +377,7 @@ final class GameEngine: ObservableObject {
 
         case .digger:
             lem.actionProgress += 1
-            guard lem.actionProgress >= walkTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.walkTicksPerStep else { break }
             lem.actionProgress = 0
             let below = tile(lem.y + 1, col)
             if below == .steel || !isSolid(below) {
@@ -407,7 +390,7 @@ final class GameEngine: ObservableObject {
 
         case .climbing:
             lem.actionProgress += 1
-            guard lem.actionProgress >= climbTicksPerStep else { break }
+            guard lem.actionProgress >= GameTuning.climbTicksPerStep else { break }
             lem.actionProgress = 0
             let dir = lem.facingRight ? 1 : -1
             let wallCol = col + dir
@@ -496,12 +479,21 @@ final class GameEngine: ObservableObject {
                 } else {
                     lem.facingRight.toggle()
                 }
-            } else {
-                lem.y -= 1
-                lem.x += Double(dir)
+                return
             }
+            lem.y -= 1
+            lem.x += Double(dir)
         } else {
             lem.x += Double(dir)
+        }
+
+        // Check the footing of the tile just stepped onto, on this same tick.
+        // Leaving it to the next walk step meant a lemming that walked off a
+        // ledge stood in the walking pose over thin air for the whole gap
+        // between steps before the fall began.
+        if !isSolid(tile(lem.y + 1, Int(lem.x.rounded()))) {
+            lem.state = .falling
+            lem.actionProgress = 0
         }
     }
 }

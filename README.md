@@ -9,9 +9,9 @@
 
 - ✅ Classic Lemmings gameplay: walking, falling, digging and building lemmings on destructible terrain
 - ✅ Eight assignable skills — Climber, Floater, Bomber, Blocker, Builder, Basher, Miner and Digger
-- ✅ Release rate, fast-forward, Nuke, minimap and a single bottom control panel with OUT / IN / TIME
-- ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with walking, climbing, blocking and floater poses
-- ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it
+- ✅ Release rate, fast-forward, Nuke, a minimap with a viewport box, and a single bottom control panel with OUT / IN / TIME
+- ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with a distinct animation for every job — walking, falling, climbing, floating, digging, bashing, mining, building, blocking, shrugging, the Oh-No panic, splatting and drowning
+- ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it, each material drawn with its own pattern — dithered dirt, grass tufts, riveted steel plates, spikes and animated water
 - ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber, confetti on victory
 - ✅ Eight built-in levels across Fun, Tricky, Taxing and Mayhem, including water that drowns (floaters do not save you)
 - ✅ SFX and haptic feedback on skill assignment, level win and level loss, with a one-tap mute
