@@ -25,6 +25,36 @@ final class GameEngineTests: XCTestCase {
 
     private func isSolid(_ t: Tile) -> Bool { t == .dirt || t == .steel }
 
+    /// Walking off a ledge has to start the fall on the same tick as the
+    /// step that left the ground. Re-checking the footing only on the *next*
+    /// walk step left the lemming standing on thin air for the whole gap
+    /// between steps, which is plainly visible on screen.
+    func testWalkingOffALedgeStartsFallingImmediately() {
+        let level = tinyLevel(rows: [
+            "E.....",
+            "###...",
+            "###...",
+            "SSSSSS",
+        ])
+        let engine = GameEngine(level: level)
+        var sawWalkerOverThinAir = false
+
+        for _ in 0..<400 {
+            engine.tick()
+            for lem in engine.lemmings where lem.state == .walking {
+                let col = Int(lem.x.rounded())
+                if !isSolid(engine.tile(lem.y + 1, col)) {
+                    sawWalkerOverThinAir = true
+                }
+            }
+        }
+
+        XCTAssertFalse(
+            sawWalkerOverThinAir,
+            "a lemming was in .walking with nothing under it — it should already be .falling"
+        )
+    }
+
     func testStarsThresholds() {
         let level = tinyLevel(rows: ["E..X", "####"])
         XCTAssertEqual(level.stars(saved: 0, secondsRemaining: 60), 0)

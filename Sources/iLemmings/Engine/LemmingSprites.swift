@@ -1,164 +1,96 @@
 import SpriteKit
 import CoreGraphics
 
-/// Procedural pixel-art sprites for the lemmings, drawn to match the classic
-/// 1991 look: green hair, skin-tone face, sky-blue overalls, dark-blue shoes
-/// — confirmed against an actual screenshot of the original (Wikipedia's
-/// Amiga_Lemmings.png), not just text descriptions.
-/// Built with CoreGraphics (not UIImage/NSImage) so the same code works on
-/// iOS and macOS.
+/// Turns the pixel grids in `LemmingArt` into SpriteKit textures and the
+/// per-state animations the scene plays.
+///
+/// Colours are the 1991 palette — bright green hair, skin-tone face,
+/// royal-blue overalls, near-black shoes — confirmed against an actual
+/// screenshot of the original (Wikipedia's Amiga_Lemmings.png), not just
+/// text descriptions. Built with CoreGraphics (not UIImage/NSImage) so the
+/// same code works on iOS and macOS.
 enum LemmingSprites {
 
-    private static let pixelScale = 3
+    /// The frame rate of the original's animations: eight frames of walk in
+    /// roughly half a second. Every cycle here uses the same cadence so a
+    /// lemming that switches job doesn't visibly change speed.
+    private static let framesPerSecond = 0.12
 
-    // 8 columns x 12 rows. '.' = transparent.
-    // 1 = hair (green), 2 = skin, 3 = overalls (blue), 4 = shoe/outline (dark navy), 5 = eye (black)
-    private static let walkFrame1: [String] = [
-        "..1111..",
-        ".111111.",
-        ".222222.",
-        ".2522252",
-        ".222222.",
-        "..3333..",
-        ".333333.",
-        ".333333.",
-        ".3.33.3.",
-        ".3.33.3.",
-        "44......",
-        "......44",
+    private static let palette: [Character: CGColor] = [
+        "g": CGColor(red: 0.10, green: 0.72, blue: 0.16, alpha: 1), // hair green — a prior text-only research pass wrongly said blond
+        "s": CGColor(red: 0.96, green: 0.78, blue: 0.60, alpha: 1), // skin
+        "b": CGColor(red: 0.24, green: 0.32, blue: 0.92, alpha: 1), // overalls blue
+        "d": CGColor(red: 0.05, green: 0.06, blue: 0.16, alpha: 1), // shoes
+        "k": CGColor(red: 0, green: 0, blue: 0, alpha: 1),          // eye
+        "y": CGColor(red: 0.95, green: 0.65, blue: 0.12, alpha: 1), // umbrella
+        "t": CGColor(red: 0.72, green: 0.74, blue: 0.80, alpha: 1), // tool head
+        "n": CGColor(red: 0.50, green: 0.32, blue: 0.14, alpha: 1), // tool handle
+        "o": CGColor(red: 0.85, green: 0.45, blue: 0.15, alpha: 1), // brick
     ]
-
-    private static let walkFrame2: [String] = [
-        "..1111..",
-        ".111111.",
-        ".222222.",
-        ".2522252",
-        ".222222.",
-        "..3333..",
-        ".333333.",
-        ".333333.",
-        "..3.3.3.",
-        "..3.3.3.",
-        ".....44.",
-        ".44.....",
-    ]
-
-    private static let standFrame: [String] = [
-        "..1111..",
-        ".111111.",
-        ".222222.",
-        ".2522252",
-        ".222222.",
-        "..3333..",
-        ".333333.",
-        ".333333.",
-        "..3333..",
-        "..3333..",
-        "..44.44.",
-        "........",
-    ]
-
-    private static let climbFrame: [String] = [
-        "........",
-        "..1111..",
-        ".111111.",
-        ".222222.",
-        ".2522252",
-        "..3333..",
-        "3.3333.3",
-        "3.3333.3",
-        "..3333..",
-        "..3333..",
-        "..44.44.",
-        "........",
-    ]
-
-    private static let floatFrame: [String] = [
-        "..6666..",
-        ".6....6.",
-        "..1111..",
-        ".111111.",
-        ".222222.",
-        ".2522252",
-        "..3333..",
-        ".333333.",
-        ".3.33.3.",
-        ".3.33.3.",
-        "44......",
-        "......44",
-    ]
-
-    private static let blockFrame: [String] = [
-        "..1111..",
-        ".111111.",
-        ".222222.",
-        ".2522252",
-        ".222222.",
-        ".333333.",
-        "3.33333.",
-        "3.33333.",
-        "..3.3...",
-        "..3.3...",
-        ".44..44.",
-        "........",
-    ]
-
-    private static func color(for code: Character) -> CGColor {
-        switch code {
-        case "1": return CGColor(red: 0.15, green: 0.62, blue: 0.20, alpha: 1) // hair green — confirmed against an actual screenshot of the original (a prior text-only research pass wrongly said blond)
-        case "2": return CGColor(red: 0.93, green: 0.74, blue: 0.55, alpha: 1) // skin
-        case "3": return CGColor(red: 0.15, green: 0.45, blue: 0.85, alpha: 1) // overalls blue
-        case "4": return CGColor(red: 0.08, green: 0.10, blue: 0.20, alpha: 1) // shoes/outline
-        case "5": return CGColor(red: 0.05, green: 0.05, blue: 0.05, alpha: 1) // eye
-        case "6": return CGColor(red: 0.85, green: 0.78, blue: 0.20, alpha: 1) // umbrella
-        default: return CGColor(red: 0, green: 0, blue: 0, alpha: 0)
-        }
-    }
 
     static func makeCGImage(_ pattern: [String]) -> CGImage? {
-        let cols = pattern[0].count
-        let rows = pattern.count
-        let width = cols * pixelScale
-        let height = rows * pixelScale
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let ctx = CGContext(
-            data: nil, width: width, height: height,
-            bitsPerComponent: 8, bytesPerRow: 0,
-            space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            return nil
-        }
-
-        for (r, row) in pattern.enumerated() {
-            for (c, ch) in row.enumerated() where ch != "." {
-                ctx.setFillColor(color(for: ch))
-                // Flip vertically: image row 0 is the top, CGContext y=0 is the bottom.
-                let y = height - (r + 1) * pixelScale
-                ctx.fill(CGRect(x: c * pixelScale, y: y, width: pixelScale, height: pixelScale))
-            }
-        }
-
-        return ctx.makeImage()
+        PixelArt.makeCGImage(pattern, palette: palette)
     }
 
     private static func makeTexture(_ pattern: [String]) -> SKTexture {
-        guard let cgImage = makeCGImage(pattern) else { return SKTexture() }
-        let texture = SKTexture(cgImage: cgImage)
-        texture.filteringMode = .nearest
-        return texture
+        PixelArt.makeTexture(pattern, palette: palette)
     }
 
-    static let walk1: SKTexture = makeTexture(walkFrame1)
-    static let walk2: SKTexture = makeTexture(walkFrame2)
-    static let stand: SKTexture = makeTexture(standFrame)
-    static let climb: SKTexture = makeTexture(climbFrame)
-    static let block: SKTexture = makeTexture(blockFrame)
-    static let float: SKTexture = makeTexture(floatFrame)
+    private static func loop(_ patterns: [[String]]) -> SKAction {
+        .repeatForever(.animate(with: patterns.map(makeTexture), timePerFrame: framesPerSecond))
+    }
 
-    static let walkAnimation: SKAction = .animate(with: [walk1, walk2], timePerFrame: 0.15)
+    // MARK: - Animations
+    //
+    // Every working state has its own cycle. The previous build drew a
+    // standing lemming with a coloured dot over its head for Basher, Miner,
+    // Digger, Builder and Blocker alike, which is not how any of this reads
+    // in the original: there you tell the jobs apart by what the lemming is
+    // visibly doing.
+
+    static let walk = loop([LemmingArt.walk1, LemmingArt.walk2, LemmingArt.walk3, LemmingArt.walk4])
+    static let fall = loop([LemmingArt.fall1, LemmingArt.fall2])
+    static let float = loop([LemmingArt.float1, LemmingArt.float2])
+    static let climb = loop([LemmingArt.climb1, LemmingArt.climb2])
+    static let dig = loop([LemmingArt.dig1, LemmingArt.dig2])
+    static let bash = loop([LemmingArt.bash1, LemmingArt.bash2])
+    static let mine = loop([LemmingArt.mine1, LemmingArt.mine2])
+    static let build = loop([LemmingArt.build1, LemmingArt.build2])
+    static let block = loop([LemmingArt.block1, LemmingArt.block2])
+    static let shrug = loop([LemmingArt.shrug1, LemmingArt.shrug2])
+    static let drown = loop([LemmingArt.drown1, LemmingArt.drown2])
+
+    /// Oh-No runs faster than the rest: it is a five-second panic, and the
+    /// quicker flap is the tell that this one is about to blow.
+    static let ohNo = SKAction.repeatForever(
+        .animate(with: [LemmingArt.ohno1, LemmingArt.ohno2].map(makeTexture), timePerFrame: 0.07)
+    )
+
+    // MARK: - Single frames
+
+    static let stand: SKTexture = makeTexture(LemmingArt.walk1)
+    static let splat: SKTexture = makeTexture(LemmingArt.splat1)
+
+    /// The panel icon for a skill: the lemming actually doing that job.
+    /// That is what the original puts on its buttons, and it means the panel
+    /// teaches the poses you then have to recognise out on the level — which
+    /// a set of abstract arrow glyphs never did.
+    static func iconImage(for skill: LemSkill) -> CGImage? {
+        let art: [String]
+        switch skill {
+        case .climber: art = LemmingArt.climb1
+        case .floater: art = LemmingArt.float1
+        case .bomber:  art = LemmingArt.ohno1
+        case .blocker: art = LemmingArt.block1
+        case .builder: art = LemmingArt.build1
+        case .basher:  art = LemmingArt.bash1
+        case .miner:   art = LemmingArt.mine1
+        case .digger:  art = LemmingArt.dig1
+        }
+        return makeCGImage(art)
+    }
 
     /// A CGImage of the walking pose, for SwiftUI decorations (e.g. the
     /// menu's background walkers) that don't need a full SpriteKit scene.
-    static let standCGImageForUI: CGImage? = makeCGImage(walkFrame1)
+    static let standCGImageForUI: CGImage? = makeCGImage(LemmingArt.walk1)
 }

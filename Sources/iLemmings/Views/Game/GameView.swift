@@ -15,6 +15,7 @@ struct GameView: View {
     @State private var showResult = false
     @State private var earnedStars = 0
     @State private var lastSkillTotal: Int
+    @State private var viewport: ClosedRange<Double>?
 
     init(level: LevelDefinition, levelIndex: Int) {
         self.level = level
@@ -30,7 +31,6 @@ struct GameView: View {
             Color.brandBlack.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                MiniMapStrip(engine: engine)
                 GeometryReader { proxy in
                     SpriteView(scene: scene)
                         .frame(width: proxy.size.width, height: proxy.size.height)
@@ -40,7 +40,7 @@ struct GameView: View {
                         }
                 }
 
-                BottomControlPanel(engine: engine, isPaused: $isPaused)
+                BottomControlPanel(engine: engine, isPaused: $isPaused, viewport: viewport)
             }
 
             if isPaused {
@@ -107,6 +107,7 @@ struct GameView: View {
         scene.onSplat = { sound.play(.splat) }
         scene.onDrown = { sound.play(.drown) }
         scene.onTogglePause = { isPaused.toggle() }
+        scene.onViewportChanged = { viewport = $0 }
     }
 
     private func restart() {
@@ -125,53 +126,80 @@ struct GameView: View {
 /// (OUT / IN / TIME), instead of a brand-colored UI font.
 private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
 
-private struct MiniMapStrip: View {
+/// The level at a glance, sized to its own proportions and sitting inside
+/// the control panel — which is where the original keeps it.
+///
+/// It used to be a full-width strip above the playfield, which forced a
+/// choice between two bad options: scale uniformly and get a postage stamp
+/// adrift in a very wide black bar, or stretch to fill and give a 26-column
+/// level tiles 56 points wide and 5 tall. A level here is far squarer than
+/// the original's long scrolling maps, so the honest answer is to let the
+/// minimap be as small as it wants to be and give the height back to the
+/// game.
+private struct MiniMap: View {
     @ObservedObject var engine: GameEngine
+    /// The columns currently on screen, drawn as a box like the original's.
+    let viewport: ClosedRange<Double>?
+
+    private var aspect: CGFloat {
+        CGFloat(max(engine.width, 1)) / CGFloat(max(engine.height, 1))
+    }
 
     var body: some View {
+        let height = controlButtonSize - 4
         Canvas { context, size in
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
             let cols = CGFloat(max(engine.width, 1))
             let rows = CGFloat(max(engine.height, 1))
-            let cell = min(size.width / cols, size.height / rows)
-            let mapW = cols * cell
-            let mapH = rows * cell
-            let ox = (size.width - mapW) / 2
-            let oy = (size.height - mapH) / 2
+            let cellW = size.width / cols
+            let cellH = size.height / rows
             for r in 0..<engine.height {
                 for c in 0..<engine.width {
-                    let color: Color?
-                    switch engine.tile(r, c) {
-                    case .dirt: color = Color(red: 0.55, green: 0.34, blue: 0.10)
-                    case .steel: color = Color(red: 0.62, green: 0.62, blue: 0.68)
-                    case .trap: color = Color(red: 0.85, green: 0.15, blue: 0.12)
-                    case .water: color = Color(red: 0.18, green: 0.45, blue: 0.78)
-                    case .exit: color = Color(red: 1, green: 0.85, blue: 0.2)
-                    case .entrance: color = Color(red: 0.25, green: 0.92, blue: 0.35)
-                    case .empty: color = Color(red: 0.08, green: 0.07, blue: 0.10)
-                    }
-                    guard let color else { continue }
+                    guard let color = miniColor(engine.tile(r, c)) else { continue }
                     let rect = CGRect(
-                        x: ox + CGFloat(c) * cell,
-                        y: oy + CGFloat(r) * cell,
-                        width: max(1, cell),
-                        height: max(1, cell)
+                        x: CGFloat(c) * cellW, y: CGFloat(r) * cellH,
+                        width: max(1, cellW), height: max(1, cellH)
                     )
                     context.fill(Path(rect), with: .color(color))
                 }
             }
             for lem in engine.lemmings where lem.isAlive {
                 let rect = CGRect(
-                    x: ox + CGFloat(lem.x) * cell,
-                    y: oy + CGFloat(lem.y) * cell,
-                    width: max(2, cell),
-                    height: max(2, cell)
+                    x: CGFloat(lem.x) * cellW, y: CGFloat(lem.y) * cellH,
+                    width: max(1.5, cellW), height: max(1.5, cellH)
                 )
                 context.fill(Path(rect), with: .color(lcdGreen))
             }
+            // Clamped to the level: on a map narrower than the window the
+            // camera shows sky past both ends, and an unclamped box would be
+            // drawn off the edge instead of around everything.
+            if let viewport {
+                let lo = max(0, min(Double(cols), viewport.lowerBound))
+                let hi = max(0, min(Double(cols), viewport.upperBound))
+                if hi > lo {
+                    let box = CGRect(
+                        x: CGFloat(lo) * cellW + 0.5, y: 0.5,
+                        width: max(2, CGFloat(hi - lo) * cellW - 1), height: size.height - 1
+                    )
+                    context.stroke(Path(box), with: .color(.white.opacity(0.9)), lineWidth: 1)
+                }
+            }
         }
-        .frame(height: 52)
+        .frame(width: min(max(height * aspect, 48), 220), height: height)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
+        .accessibilityHidden(true)
+    }
+
+    private func miniColor(_ tile: Tile) -> Color? {
+        switch tile {
+        case .dirt: return Color(red: 0.55, green: 0.34, blue: 0.10)
+        case .steel: return Color(red: 0.62, green: 0.62, blue: 0.68)
+        case .trap: return Color(red: 0.85, green: 0.15, blue: 0.12)
+        case .water: return Color(red: 0.18, green: 0.45, blue: 0.78)
+        case .exit: return Color(red: 1, green: 0.85, blue: 0.2)
+        case .entrance: return Color(red: 0.25, green: 0.92, blue: 0.35)
+        case .empty: return Color(red: 0.08, green: 0.07, blue: 0.10)
+        }
     }
 }
 
@@ -182,14 +210,14 @@ private struct MiniMapStrip: View {
 private struct DitheredSkillBackground: View {
     var body: some View {
         Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.32, green: 0.22, blue: 0.13)))
-            let dot = 3.0
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.22, green: 0.15, blue: 0.09)))
+            let dot = 2.0
             var y = 0.0
             var row = 0
             while y < size.height {
                 var x = row.isMultiple(of: 2) ? 0.0 : dot
                 while x < size.width {
-                    context.fill(Path(CGRect(x: x, y: y, width: dot, height: dot)), with: .color(Color(red: 0.45, green: 0.33, blue: 0.19)))
+                    context.fill(Path(CGRect(x: x, y: y, width: dot, height: dot)), with: .color(Color(red: 0.34, green: 0.24, blue: 0.14)))
                     x += dot * 2
                 }
                 y += dot
@@ -211,6 +239,7 @@ private struct BottomControlPanel: View {
     @EnvironmentObject var loc: LocalizationManager
     @EnvironmentObject var sound: SoundManager
     @Binding var isPaused: Bool
+    let viewport: ClosedRange<Double>?
     @State private var showNukeConfirm = false
 
     var body: some View {
@@ -232,6 +261,8 @@ private struct BottomControlPanel: View {
             ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
                 sound.isMuted.toggle()
             }
+            Spacer(minLength: 8)
+            MiniMap(engine: engine, viewport: viewport)
             Spacer(minLength: 8)
             statsRow
         }
@@ -307,15 +338,19 @@ private struct SkillButton: View {
         } label: {
             ZStack(alignment: .topLeading) {
                 DitheredSkillBackground()
-                Image(systemName: skill.symbol)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color(red: 0.15, green: 0.62, blue: 0.20))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if let icon = LemmingSprites.iconImage(for: skill) {
+                    Image(decorative: icon, scale: 1)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
                 Text("\(count)")
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(lcdGreen)
                     .padding(.horizontal, 2)
-                    .background(Color.black.opacity(0.75))
+                    .background(Color.black.opacity(0.85))
                     .padding(1)
             }
             .frame(width: controlButtonSize, height: controlButtonSize)
