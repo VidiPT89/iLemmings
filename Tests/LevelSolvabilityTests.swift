@@ -21,9 +21,30 @@ final class LevelSolvabilityTests: XCTestCase {
         for _ in 0..<limit {
             if engine.isWon || engine.isLost { break }
             engine.tick()
+            assertNobodyIsInsideTheGround(engine, levelID: level.id)
             act(engine, levelID: level.id)
         }
         return engine
+    }
+
+    /// Only Basher, Miner and Digger are ever inside solid terrain. Anyone
+    /// else standing in dirt or steel is being drawn buried up to the neck,
+    /// which is what it looks like on screen.
+    private func assertNobodyIsInsideTheGround(_ engine: GameEngine, levelID: String) {
+        for lem in engine.lemmings {
+            switch lem.state {
+            case .basher, .miner, .digger, .dead, .saved:
+                continue
+            default:
+                break
+            }
+            let col = Int(lem.x.rounded())
+            let here = engine.tile(lem.y, col)
+            XCTAssertFalse(
+                isSolid(here),
+                "\(levelID): a \(lem.state) lemming is inside \(here) at row \(lem.y), col \(col)"
+            )
+        }
     }
 
     private func isSolid(_ t: Tile) -> Bool { t == .dirt || t == .steel }

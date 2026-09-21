@@ -81,6 +81,19 @@ extension GameScene {
     /// the entire grid's shape nodes every time was wasted work that caused
     /// visible stutter on every dig.
     func updateTerrain() {
+        // If the engine is on a different-sized map than the one this scene
+        // was built for, every cached tile is meaningless: the diff below
+        // would compare against the wrong grid, and a taller level would
+        // index straight off the end of it. Start over instead.
+        if lastGrid.count != engine.height || lastGrid.first?.count != engine.width {
+            for node in terrainNodes.values { node.removeFromParent() }
+            terrainNodes.removeAll()
+            lastGrid = Array(
+                repeating: Array(repeating: Tile.empty, count: engine.width),
+                count: engine.height
+            )
+        }
+
         // Cells whose tile actually changed, plus the cell directly below
         // each of them (removing dirt can turn the tile below into a
         // grass-capped one — see `fillColor(for:row:col:)`).
