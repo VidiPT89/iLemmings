@@ -188,14 +188,6 @@ final class GameScene: SKScene {
             lemmingNodes[lem.id] = node
 
             let target = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y))
-            if existing == nil {
-                // A brand-new lemming starts at the hatch, not at the origin.
-                node.position = target
-                addChild(node)
-            } else if didTick {
-                let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
-                node.run(.move(to: target, duration: moveDuration), withKey: "move")
-            }
             node.isHidden = (lem.state == .dead)
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 

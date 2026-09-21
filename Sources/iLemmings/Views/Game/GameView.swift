@@ -20,6 +20,12 @@ struct GameView: View {
     @State private var earnedStars = 0
     @State private var lastSkillTotal: Int
     @State private var viewport: ClosedRange<Double>?
+    /// Bumped whenever `scene` is replaced. `SpriteView` latches on to the
+    /// scene it was created with and ignores later changes to the binding,
+    /// so without a fresh identity the old level stays on screen while the
+    /// engine runs the new one — terrain from one level, lemmings from the
+    /// other, which is exactly as broken as it sounds.
+    @State private var sceneGeneration = 0
 
     init(level: LevelDefinition, levelIndex: Int) {
         _levelIndex = State(initialValue: levelIndex)
@@ -36,6 +42,7 @@ struct GameView: View {
             VStack(spacing: 0) {
                 GeometryReader { proxy in
                     SpriteView(scene: scene)
+                        .id(sceneGeneration)
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .onAppear { scene.resizeViewport(to: proxy.size) }
                         .onChange(of: proxy.size) { _, newSize in
@@ -141,6 +148,7 @@ struct GameView: View {
         let fresh = GameScene(engine: engine)
         bindCallbacks(to: fresh)
         scene = fresh
+        sceneGeneration += 1
         isPaused = false
         showResult = false
         earnedStars = 0
