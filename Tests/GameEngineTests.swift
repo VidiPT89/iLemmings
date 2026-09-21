@@ -55,6 +55,61 @@ final class GameEngineTests: XCTestCase {
         )
     }
 
+    /// Finishing a level plays on into the next one on the same engine
+    /// instance (`@StateObject` cannot be swapped out), so `load` has to
+    /// bring across the new grid, entrance, skills and clock — and clear
+    /// everything the finished level left behind.
+    func testLoadingAnotherLevelReplacesTheWholeGameState() {
+        let first = tinyLevel(rows: ["E..X", "####"], skills: [.digger: 1], total: 1, time: 60)
+        let engine = GameEngine(level: first)
+        for _ in 0..<600 { engine.tick() }
+        XCTAssertTrue(engine.isWon || engine.isLost, "the first level should have finished")
+
+        let second = tinyLevel(
+            rows: ["..E...", "######", "....X.", "SSSSSS"],
+            skills: [.builder: 3],
+            total: 4,
+            need: 2,
+            time: 90
+        )
+        engine.load(second)
+
+        XCTAssertFalse(engine.isWon)
+        XCTAssertFalse(engine.isLost)
+        XCTAssertEqual(engine.savedCount, 0)
+        XCTAssertEqual(engine.deadCount, 0)
+        XCTAssertEqual(engine.spawnedCount, 0)
+        XCTAssertTrue(engine.lemmings.isEmpty)
+        XCTAssertEqual(engine.secondsRemaining, 90)
+        XCTAssertEqual(engine.skillInventory[.builder], 3)
+        XCTAssertNil(engine.skillInventory[.digger])
+        XCTAssertEqual(engine.width, 6)
+        XCTAssertEqual(engine.height, 4)
+        XCTAssertEqual(engine.entranceRow, 0)
+        XCTAssertEqual(engine.entranceColumn, 2)
+
+        // And it actually runs: lemmings come out of the *new* hatch.
+        for _ in 0..<200 { engine.tick() }
+        XCTAssertGreaterThan(engine.spawnedCount, 0)
+    }
+
+    /// Nuke shuts the hatch, so the level has to end once the lemmings that
+    /// did come out are resolved. Waiting for the full crowd to spawn left
+    /// the player staring at an empty level until the clock ran out.
+    func testNukeEndsTheLevelWithoutWaitingForTheClock() {
+        let level = tinyLevel(rows: ["E....X", "######"], total: 20, need: 20, time: 300)
+        let engine = GameEngine(level: level)
+        for _ in 0..<60 { engine.tick() }
+        XCTAssertGreaterThan(engine.spawnedCount, 0)
+        XCTAssertLessThan(engine.spawnedCount, level.totalLemmings)
+
+        engine.nukeAll()
+        for _ in 0..<400 { engine.tick() }
+
+        XCTAssertTrue(engine.isWon || engine.isLost, "the level should be over once the nuke resolves")
+        XCTAssertGreaterThan(engine.secondsRemaining, 0, "it should not have had to wait out the clock")
+    }
+
     func testStarsThresholds() {
         let level = tinyLevel(rows: ["E..X", "####"])
         XCTAssertEqual(level.stars(saved: 0, secondsRemaining: 60), 0)

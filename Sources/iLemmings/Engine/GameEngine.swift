@@ -3,7 +3,7 @@ import Foundation
 /// Pure-Swift, deterministic tick-based simulation. No UI/rendering here —
 /// `GameScene` (SpriteKit) reads this engine's published state to draw frames.
 final class GameEngine: ObservableObject {
-    let level: LevelDefinition
+    private(set) var level: LevelDefinition
     @Published private(set) var grid: [[Tile]]
     @Published private(set) var lemmings: [Lemming] = []
     @Published private(set) var savedCount = 0
@@ -24,7 +24,7 @@ final class GameEngine: ObservableObject {
     private var releaseTickIndex = 0
     private var nukeArmed = false
     private var nextNukeIndex = 0
-    private let entrance: (row: Int, col: Int)
+    private var entrance: (row: Int, col: Int)
 
     var ticksPerSecond: Double { 20 }
 
@@ -36,13 +36,28 @@ final class GameEngine: ObservableObject {
         self.skillInventory = level.skillCounts
         self.releaseRate = level.minReleaseRate
         self.releaseTickIndex = level.minReleaseRate - 30
+        self.entrance = Self.findEntrance(in: parsedGrid)
+    }
+
+    private static func findEntrance(in grid: [[Tile]]) -> (row: Int, col: Int) {
         var found = (row: 1, col: 1)
-        for (r, row) in parsedGrid.enumerated() {
+        for (r, row) in grid.enumerated() {
             for (c, t) in row.enumerated() where t == .entrance {
                 found = (r, c)
             }
         }
-        self.entrance = found
+        return found
+    }
+
+    /// Swaps in a different level on the *same* instance, then resets.
+    ///
+    /// Playing on from the result screen has to reuse this engine: `@StateObject`
+    /// has no setter for the object itself, so building a new engine would
+    /// leave the HUD and the win/lose bindings attached to the old one.
+    func load(_ level: LevelDefinition) {
+        self.level = level
+        self.entrance = Self.findEntrance(in: level.rows.map { row in row.compactMap { Tile(rawValue: $0) } })
+        reset()
     }
 
     /// Reinitializes all mutable state in place (same instance, same level)
@@ -203,7 +218,11 @@ final class GameEngine: ObservableObject {
     /// out or every spawned lemming has been resolved (saved or dead) —
     /// reaching the minimum save count doesn't end the level early.
     private func evaluateEndConditions() {
-        let allLemmingsResolved = spawnedCount >= level.totalLemmings && lemmings.allSatisfy { !$0.isAlive }
+        // Nuke stops the hatch, so the rest of the crowd is never coming out:
+        // without it in this condition, nuking early left the level running
+        // against a full clock with nothing alive on screen.
+        let everyoneIsOut = spawnedCount >= level.totalLemmings || nukeArmed
+        let allLemmingsResolved = everyoneIsOut && lemmings.allSatisfy { !$0.isAlive }
         let finishingAnimation = lemmings.contains {
             switch $0.state {
             case .splatting, .drowning, .ohNo: return true

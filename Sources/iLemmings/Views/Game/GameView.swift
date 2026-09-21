@@ -6,8 +6,12 @@ struct GameView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("unlockedLevelIndex") private var unlockedIndex = 0
 
-    let level: LevelDefinition
-    let levelIndex: Int
+    /// The level in play. Held as state rather than passed in once, because
+    /// finishing a level plays straight on into the next one instead of
+    /// throwing the player back to the menu.
+    @State private var levelIndex: Int
+    private var level: LevelDefinition { LevelLibrary.all[levelIndex] }
+    private var hasNextLevel: Bool { levelIndex + 1 < LevelLibrary.all.count }
 
     @StateObject private var engine: GameEngine
     @State private var scene: GameScene
@@ -18,8 +22,7 @@ struct GameView: View {
     @State private var viewport: ClosedRange<Double>?
 
     init(level: LevelDefinition, levelIndex: Int) {
-        self.level = level
-        self.levelIndex = levelIndex
+        _levelIndex = State(initialValue: levelIndex)
         let eng = GameEngine(level: level)
         _engine = StateObject(wrappedValue: eng)
         _scene = State(initialValue: GameScene(engine: eng))
@@ -70,6 +73,10 @@ struct GameView: View {
             // you'd already 3-starred used to claim 3 stars for a 1-star run.
             earnedStars = level.stars(saved: engine.savedCount, secondsRemaining: engine.secondsRemaining)
             StarsStore.record(earnedStars, for: level.id)
+            // Unlocking belongs to winning, not to pressing a particular
+            // button on the result sheet: leaving it on "next level" meant
+            // that backing out to the menu after a win lost the unlock.
+            unlockedIndex = max(unlockedIndex, levelIndex + 1)
             sound.play(.win)
             Haptics.levelComplete()
             showResult = true
@@ -85,11 +92,10 @@ struct GameView: View {
             ResultView(
                 won: engine.isWon,
                 stars: earnedStars,
-                onNext: {
-                    if engine.isWon { unlockedIndex = max(unlockedIndex, levelIndex + 1) }
-                    dismiss()
-                },
-                onRetry: { showResult = false; restart() }
+                hasNextLevel: hasNextLevel,
+                onNext: { advanceToNextLevel() },
+                onRetry: { showResult = false; restart() },
+                onExit: { dismiss() }
             )
             .interactiveDismissDisabled()
         }
@@ -110,14 +116,35 @@ struct GameView: View {
         scene.onViewportChanged = { viewport = $0 }
     }
 
+    /// Plays straight on into the next level on this same screen. Dismissing
+    /// instead sent the player back out to the menu after every win, which
+    /// made finishing a level feel like losing your place.
+    private func advanceToNextLevel() {
+        guard hasNextLevel else { dismiss(); return }
+        let next = levelIndex + 1
+        levelIndex = next
+        // Loaded from the index rather than from `level`, so this never
+        // depends on when SwiftUI makes the new @State value readable.
+        engine.load(LevelLibrary.all[next])
+        startFreshScene()
+    }
+
     private func restart() {
         engine.reset()
+        startFreshScene()
+    }
+
+    /// A restart and a level change both need a brand-new scene wired up and
+    /// every bit of per-level view state cleared; keeping that in one place
+    /// stops the two drifting apart.
+    private func startFreshScene() {
         let fresh = GameScene(engine: engine)
         bindCallbacks(to: fresh)
         scene = fresh
         isPaused = false
         showResult = false
         earnedStars = 0
+        viewport = nil
         lastSkillTotal = engine.skillInventory.values.reduce(0, +)
     }
 }
@@ -185,7 +212,7 @@ private struct MiniMap: View {
                 }
             }
         }
-        .frame(width: min(max(height * aspect, 48), 220), height: height)
+        .frame(width: min(max(height * aspect, 72), 220), height: height)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
         .accessibilityHidden(true)
     }
@@ -388,8 +415,10 @@ private struct ResultView: View {
     @EnvironmentObject var loc: LocalizationManager
     let won: Bool
     let stars: Int
+    let hasNextLevel: Bool
     let onNext: () -> Void
     let onRetry: () -> Void
+    let onExit: () -> Void
 
     var body: some View {
         ZStack {
@@ -418,11 +447,26 @@ private struct ResultView: View {
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
 
-                Button(won ? loc.string(.nextLevel) : loc.string(.retryLevel), action: won ? onNext : onRetry)
-                    .buttonStyle(BrandButtonStyle())
-                Button(loc.string(.backToLevels), action: onNext)
-                    .buttonStyle(.plain)
-                    .padding(.top, 4)
+                // Three distinct outcomes, not two: play on, try again, or
+                // leave. "Back to levels" used to run the same action as
+                // "next level", so both buttons did the same thing.
+                if won, hasNextLevel {
+                    Button(loc.string(.nextLevel), action: onNext)
+                        .buttonStyle(BrandButtonStyle())
+                    Button(loc.string(.backToLevels), action: onExit)
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+                } else if won {
+                    // Last level: there is nowhere to play on to.
+                    Button(loc.string(.backToLevels), action: onExit)
+                        .buttonStyle(BrandButtonStyle())
+                } else {
+                    Button(loc.string(.retryLevel), action: onRetry)
+                        .buttonStyle(BrandButtonStyle())
+                    Button(loc.string(.backToLevels), action: onExit)
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+                }
             }
             .padding(32)
         }
