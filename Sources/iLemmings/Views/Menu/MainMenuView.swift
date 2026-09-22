@@ -3,7 +3,6 @@ import SwiftUI
 struct MainMenuView: View {
     @EnvironmentObject var loc: LocalizationManager
     @Environment(\.colorScheme) private var scheme
-    @AppStorage("unlockedLevelIndex") private var unlockedIndex = 0
     @State private var showLevels = false
     @State private var showPlay = false
     @State private var showSettings = false
@@ -11,7 +10,7 @@ struct MainMenuView: View {
 
     /// "Play" jumps straight into the next level the player hasn't beaten yet.
     private var nextLevelIndex: Int {
-        min(unlockedIndex, LevelLibrary.all.count - 1)
+        LevelLibrary.continueIndex(stars: StarsStore.stars(for:))
     }
 
     var body: some View {
