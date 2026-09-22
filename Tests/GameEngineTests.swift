@@ -110,6 +110,34 @@ final class GameEngineTests: XCTestCase {
         XCTAssertGreaterThan(engine.secondsRemaining, 0, "it should not have had to wait out the clock")
     }
 
+    /// "Play" has to move the player along. Picking the target from the
+    /// unlock counter meant that once everything was unlocked the counter
+    /// saturated and the button reopened the final level for ever.
+    func testPlayOpensTheFirstUnfinishedLevel() {
+        let ids = LevelLibrary.all.map(\.id)
+
+        // Nothing played yet.
+        XCTAssertEqual(LevelLibrary.continueIndex(stars: { _ in 0 }), 0)
+
+        // The first three finished: it moves on to the fourth.
+        let firstThree = Set(ids.prefix(3))
+        XCTAssertEqual(
+            LevelLibrary.continueIndex(stars: { firstThree.contains($0) ? 2 : 0 }),
+            3
+        )
+
+        // A gap counts: an earlier level left unfinished is picked up again.
+        let allButSecond = Set(ids).subtracting([ids[1]])
+        XCTAssertEqual(
+            LevelLibrary.continueIndex(stars: { allButSecond.contains($0) ? 3 : 0 }),
+            1
+        )
+
+        // Everything done: start the campaign over rather than pinning the
+        // button to the last level.
+        XCTAssertEqual(LevelLibrary.continueIndex(stars: { _ in 3 }), 0)
+    }
+
     func testStarsThresholds() {
         let level = tinyLevel(rows: ["E..X", "####"])
         XCTAssertEqual(level.stars(saved: 0, secondsRemaining: 60), 0)

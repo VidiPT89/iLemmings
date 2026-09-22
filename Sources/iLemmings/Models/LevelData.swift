@@ -225,4 +225,17 @@ enum LevelLibrary {
     static let all: [LevelDefinition] = [
         level1, level5, level2, level6, level3, level7, level4, level8,
     ]
+
+    /// The level "Play" should open: the first one not finished yet, or the
+    /// first level of all once every one of them is done.
+    ///
+    /// Driven by stars earned rather than by the unlock counter. That
+    /// counter only ever counts up, so once everything was unlocked it
+    /// saturated and pinned "Play" to the final level: finish it, land back
+    /// on the menu, press Play, and get the very same level again with no
+    /// way onward. A win always earns at least one star, so "no stars" is
+    /// exactly "not finished".
+    static func continueIndex(stars: (String) -> Int) -> Int {
+        all.firstIndex { stars($0.id) == 0 } ?? 0
+    }
 }
