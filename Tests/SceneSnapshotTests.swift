@@ -40,6 +40,35 @@ final class SceneSnapshotTests: XCTestCase {
         XCTAssertGreaterThan(engine.savedCount, 0, "nobody crossed the bridge")
     }
 
+    /// Every level has to be drawn at the same size. Fitting each map's
+    /// height to the window blew a 4-row level up to four times the size of
+    /// a 17-row one: giant lemmings, and only a quarter of the map on screen.
+    func testEveryLevelIsDrawnAtTheSameScaleAndFitsTheWindow() throws {
+        for size in [CGSize(width: 1466, height: 745), CGSize(width: 844, height: 300)] {
+            var scales: [CGFloat] = []
+            for (index, level) in LevelLibrary.all.enumerated() {
+                let engine = GameEngine(level: level)
+                let scene = GameScene(engine: engine)
+                let view = SKView(frame: CGRect(origin: .zero, size: size))
+                view.presentScene(scene)
+                scene.resizeViewport(to: size)
+                scales.append(scene.gameCamera.yScale)
+
+                let visibleHeight = size.height * scene.gameCamera.yScale
+                let bottom = scene.gameCamera.position.y - visibleHeight / 2
+                XCTAssertLessThanOrEqual(bottom, 0.5, "\(level.id): the floor is cut off")
+                XCTAssertGreaterThanOrEqual(
+                    bottom + visibleHeight, scene.worldHeight - 0.5,
+                    "\(level.id): the top of the level is cut off"
+                )
+                if index == 2 {
+                    try snapshot(view, scene, "6-level3-\(Int(size.width))")
+                }
+            }
+            XCTAssertEqual(Set(scales).count, 1, "levels drawn at different sizes: \(scales)")
+        }
+    }
+
     func testOverlaysRender() throws {
         let loc = LocalizationManager()
         let level = LevelLibrary.all[0]

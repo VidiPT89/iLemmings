@@ -15,6 +15,22 @@ final class LevelSolvabilityTests: XCTestCase {
         }
     }
 
+    /// A level that wins itself isn't a puzzle. Copper Shaft's "wall" was a
+    /// single tile the crowd simply stepped up, so it saved everyone with no
+    /// skill used at all.
+    func testNoBuiltInLevelWinsWithoutUsingASkill() {
+        for level in LevelLibrary.all {
+            let engine = GameEngine(level: level)
+            for _ in 0..<(level.timeLimitSeconds * 20 + 800) where !engine.isWon && !engine.isLost {
+                engine.tick()
+            }
+            XCTAssertFalse(
+                engine.isWon,
+                "\(level.id) (\(level.nameKey.rawValue)) wins with no skills: saved \(engine.savedCount)/\(level.neededToSave)"
+            )
+        }
+    }
+
     private func play(_ level: LevelDefinition) -> GameEngine {
         let engine = GameEngine(level: level)
         let limit = level.timeLimitSeconds * 20 + 800

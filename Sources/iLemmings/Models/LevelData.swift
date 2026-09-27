@@ -48,13 +48,16 @@ enum LevelLibrary {
     static let level2: LevelDefinition = {
         let width = 28
         let air = row(width, [(".", width)])
-        // 2-tile-tall dirt wall (cols 8-12). Same-level floor all the way
-        // to the exit: Basher (or Climber) then walk. No drop, so nobody
-        // splats after the breach.
-        let entranceRow = row(width, [(".", 2), ("E", 1), (".", 5), ("#", 5), (".", 15)])
+        // Dirt wall two tiles tall (cols 8-12). One tile was a step the
+        // crowd simply walked up, so the level won itself with no skills.
+        // The steel post at the left edge turns the lemmings the wall sent
+        // back, rather than walking them straight off the map while you
+        // pick a Basher.
+        let wallTop = row(width, [("S", 1), (".", 7), ("#", 5), (".", 15)])
+        let entranceRow = row(width, [("S", 1), (".", 1), ("E", 1), (".", 5), ("#", 5), (".", 15)])
         let walk = row(width, [("#", 25), ("X", 1), ("#", 2)])
         let floor = row(width, [("S", width)])
-        let rows = [air, entranceRow, walk, floor]
+        let rows = [air, wallTop, entranceRow, walk, floor]
         return LevelDefinition(
             id: "level2",
             nameKey: .levelCopperShaft,
@@ -149,7 +152,9 @@ enum LevelLibrary {
         let width = 28
         let air = row(width, [(".", width)])
         let entranceRow = row(width, [(".", 2), ("E", 1), (".", 6), ("S", 2), (".", 17)])
-        let steelFace = row(width, [(".", 9), ("S", 2), (".", 17)])
+        // Steel post at the left edge: lemmings turned by the gate pace
+        // back and forth waiting for a Climber instead of walking off the map.
+        let steelFace = row(width, [("S", 1), (".", 8), ("S", 2), (".", 17)])
         let walk = row(width, [("#", 9), ("S", 2), ("#", 14), ("X", 1), ("#", 2)])
         let floor = row(width, [("S", width)])
         // Three steel-face rows (not six): after the Climber pulls over the

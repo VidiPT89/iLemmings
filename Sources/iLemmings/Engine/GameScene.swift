@@ -3,8 +3,10 @@ import SpriteKit
 final class GameScene: SKScene {
     let engine: GameEngine
     let tileSize: CGFloat = 28
-    private let minZoom: CGFloat = 0.15
-    private let maxZoom: CGFloat = 8.0
+    /// How many rows of level every window shows: the tallest map in the
+    /// campaign. Like the original's fixed 160-pixel playfield, the scale
+    /// never changes from one level to the next.
+    private static let visibleRows = CGFloat(LevelLibrary.all.map(\.height).max() ?? 16)
 
     // Members below without `private` are the ones the `GameSceneInput` and
     // `GameSceneTerrain` extensions reach for: Swift's `private` is
@@ -113,15 +115,18 @@ final class GameScene: SKScene {
         hatch.texture = StructureSprites.hatchOpen
     }
 
-    /// Fill the SpriteView with the full level height (classic side-scroll).
-    /// Lemmings stay a fraction of a tile, so stretching the map to the
-    /// window no longer turns them into toolbar-sized giants.
+    /// Every level at the same scale, sitting on the bottom of the view.
+    /// Fitting each map's own height to the window blew a 4-row level up to
+    /// four times the size of a 17-row one — giant lemmings and a quarter of
+    /// the map on screen, which made the shallow levels unplayable. A short
+    /// level now just has more sky above it.
     func resizeViewport(to newSize: CGSize) {
         guard newSize.width > 0, newSize.height > 0 else { return }
         size = newSize
-        let fitHeightScale = worldHeight / newSize.height
-        gameCamera.setScale(min(max(fitHeightScale, minZoom), maxZoom))
-        gameCamera.position.y = worldHeight / 2
+        let rows = max(CGFloat(engine.height), Self.visibleRows)
+        let scale = rows * tileSize / newSize.height
+        gameCamera.setScale(scale)
+        gameCamera.position.y = newSize.height * scale / 2
         gameCamera.position.x = clampedCameraX(gameCamera.position.x)
     }
 
@@ -129,7 +134,7 @@ final class GameScene: SKScene {
     //
     // The original has a fixed-scale viewport and scrolls only horizontally
     // (edge-scroll) — there is no pinch/zoom in DOS/Amiga Lemmings. Zoom
-    // here is set once per resize to fit the level's height and is not
+    // here is set once per resize (see `resizeViewport`) and is not
     // user-adjustable.
 
     private func clampedCameraX(_ x: CGFloat) -> CGFloat {
