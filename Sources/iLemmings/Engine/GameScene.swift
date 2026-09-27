@@ -35,6 +35,10 @@ final class GameScene: SKScene {
     var onSplat: (() -> Void)?
     var onDrown: (() -> Void)?
     var onTogglePause: (() -> Void)?
+    /// Any key at all, before it is interpreted. Returns true when it was
+    /// used up (the briefing screen starts the level on a key press), so the
+    /// same Space doesn't then also pause the game.
+    var onKeyPressed: (() -> Bool)?
     /// Which columns of the level are on screen, so the minimap can draw the
     /// viewport box the original has.
     var onViewportChanged: ((ClosedRange<Double>) -> Void)?
@@ -95,7 +99,19 @@ final class GameScene: SKScene {
         #endif
     }
 
-    func setEnginePaused(_ paused: Bool) { isEnginePaused = paused }
+    /// Pausing freezes the lemmings mid-stride, like the original, instead
+    /// of leaving every one of them walking on the spot.
+    func setEnginePaused(_ paused: Bool) {
+        isEnginePaused = paused
+        for node in lemmingNodes.values { node.isPaused = paused }
+    }
+
+    private func updateHatch() {
+        guard engine.isHatchOpen,
+              let hatch = childNode(withName: "hatch") as? SKSpriteNode,
+              hatch.texture !== StructureSprites.hatchOpen else { return }
+        hatch.texture = StructureSprites.hatchOpen
+    }
 
     /// Fill the SpriteView with the full level height (classic side-scroll).
     /// Lemmings stay a fraction of a tile, so stretching the map to the
@@ -120,6 +136,10 @@ final class GameScene: SKScene {
         let halfViewport = size.width * gameCamera.xScale / 2
         guard worldWidth > halfViewport * 2 else { return worldWidth / 2 }
         return min(max(x, halfViewport), worldWidth - halfViewport)
+    }
+
+    func centerCamera(onColumn column: Double) {
+        gameCamera.position.x = clampedCameraX(CGFloat(column) * tileSize)
     }
 
     func pan(bySceneDelta delta: CGFloat) {
@@ -150,6 +170,7 @@ final class GameScene: SKScene {
             accumulator -= step
         }
         if ticked { updateTerrain() }
+        updateHatch()
         syncLemmingNodes(didTick: ticked)
         edgeScroll()
         updateHover()
@@ -197,6 +218,11 @@ final class GameScene: SKScene {
                 node.run(.move(to: target, duration: moveDuration), withKey: "move")
             }
             node.isHidden = (lem.state == .dead)
+            // A saved lemming goes in through the door rather than standing
+            // in the exit for the rest of the level.
+            if lem.state == .saved, node.action(forKey: "exit") == nil, node.alpha > 0 {
+                node.run(.fadeOut(withDuration: 0.3), withKey: "exit")
+            }
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
             updateAppearance(node, for: lem)
@@ -212,8 +238,6 @@ final class GameScene: SKScene {
 
     private func emitParticles(for lem: Lemming, at position: CGPoint) {
         let previous = previousStates[lem.id] ?? lem.state
-        let wasOhNo: Bool
-        if case .ohNo = previous { wasOhNo = true } else { wasOhNo = false }
         let wasSplat: Bool
         if case .splatting = previous { wasSplat = true } else { wasSplat = false }
 
@@ -231,7 +255,7 @@ final class GameScene: SKScene {
         case .drowning:
             if !wasDrown { onDrown?() }
         case .dead:
-            if wasOhNo {
+            if lem.exploded, previous != .dead {
                 addParticles(kind: .explosion, at: position)
                 onExplosion?()
             }

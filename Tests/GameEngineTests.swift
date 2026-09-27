@@ -17,13 +17,11 @@ final class GameEngineTests: XCTestCase {
             rows: rows,
             totalLemmings: total,
             neededToSave: need,
-            spawnIntervalTicks: 20,
+            minReleaseRate: 84,
             timeLimitSeconds: time,
             skillCounts: skills
         )
     }
-
-    private func isSolid(_ t: Tile) -> Bool { t == .dirt || t == .steel }
 
     /// Walking off a ledge has to start the fall on the same tick as the
     /// step that left the ground. Re-checking the footing only on the *next*
@@ -43,7 +41,7 @@ final class GameEngineTests: XCTestCase {
             engine.tick()
             for lem in engine.lemmings where lem.state == .walking {
                 let col = Int(lem.x.rounded())
-                if !isSolid(engine.tile(lem.y + 1, col)) {
+                if !engine.tile(lem.y + 1, col).isSolid {
                     sawWalkerOverThinAir = true
                 }
             }
@@ -142,11 +140,6 @@ final class GameEngineTests: XCTestCase {
         let level = tinyLevel(rows: ["E..X", "####"])
         XCTAssertEqual(level.stars(saved: 0, secondsRemaining: 60), 0)
         XCTAssertEqual(level.stars(saved: 1, secondsRemaining: 0), 3)
-    }
-
-    func testReleaseRateFloorMatchesLemmingsJSFormula() {
-        let level = tinyLevel(rows: ["E..X", "####"])
-        XCTAssertEqual(level.minReleaseRate, min(99, max(1, 104 - 20)))
     }
 
     func testWaterDrownsEvenWithFloater() {
@@ -267,7 +260,7 @@ final class GameEngineTests: XCTestCase {
                 }
             }
 
-            if minerAssigned, let blocker, !isSolid(engine.tile(blocker.y + 1, Int(blocker.x.rounded()))) {
+            if minerAssigned, let blocker, !engine.tile(blocker.y + 1, Int(blocker.x.rounded())).isSolid {
                 break
             }
         }
@@ -275,7 +268,7 @@ final class GameEngineTests: XCTestCase {
         guard let blocker else { return XCTFail("no blocker was assigned") }
         XCTAssertTrue(minerAssigned, "the miner was never assigned behind the blocker")
         XCTAssertFalse(
-            isSolid(engine.tile(blocker.y + 1, Int(blocker.x.rounded()))),
+            engine.tile(blocker.y + 1, Int(blocker.x.rounded())).isSolid,
             "the miner never cleared the blocker's footing"
         )
 
@@ -288,7 +281,7 @@ final class GameEngineTests: XCTestCase {
         let level = tinyLevel(
             rows: [
                 "......X",
-                "E.S....",
+                "E.S####",
                 "..S....",
                 "..S....",
                 "#######",
@@ -315,12 +308,176 @@ final class GameEngineTests: XCTestCase {
             time: 40
         )
         let engine = GameEngine(level: level)
-        for _ in 0..<5 { engine.tick() }
+        while engine.spawnedCount == 0 { engine.tick() }
         let before = engine.spawnedCount
         XCTAssertGreaterThan(before, 0)
         engine.nukeAll()
         for _ in 0..<80 { engine.tick() }
         XCTAssertEqual(engine.spawnedCount, before)
+    }
+
+    // MARK: - Rules of the original
+
+    private func runUntilDone(_ engine: GameEngine, ticks: Int = 3000, each: (() -> Void)? = nil) {
+        for _ in 0..<ticks where !engine.isWon && !engine.isLost {
+            engine.tick()
+            each?()
+        }
+    }
+
+    private func assign(_ skill: LemSkill, _ engine: GameEngine, to id: Int) {
+        engine.selectSkill(skill)
+        engine.applySelectedSkill(to: id)
+    }
+
+    /// No lemming may drop out of a hatch whose doors are still shut.
+    func testNobodyComesOutBeforeTheHatchOpens() {
+        let level = tinyLevel(rows: ["E...X", "#####"], total: 5)
+        let engine = GameEngine(level: level)
+        while !engine.isHatchOpen {
+            engine.tick()
+            XCTAssertEqual(engine.spawnedCount, 0)
+        }
+    }
+
+    /// Faster release rates really do release faster, on the original's curve.
+    func testReleaseIntervalFollowsTheOriginalCurve() {
+        XCTAssertEqual(GameTuning.releaseIntervalTicks(rate: 1), 64)  // 53 frames
+        XCTAssertEqual(GameTuning.releaseIntervalTicks(rate: 99), 5)  // 4 frames
+        XCTAssertLessThan(
+            GameTuning.releaseIntervalTicks(rate: 80),
+            GameTuning.releaseIntervalTicks(rate: 50)
+        )
+    }
+
+    /// Digging through the bottom of the level is a death, not a landing on
+    /// an invisible floor.
+    func testDiggingThroughTheBottomOfTheLevelKills() {
+        let level = tinyLevel(rows: ["E....", "#####", "#####"], skills: [.digger: 1])
+        let engine = GameEngine(level: level)
+        runUntilDone(engine) {
+            if let lem = engine.lemmings.first, lem.state == .walking {
+                self.assign(.digger, engine, to: lem.id)
+            }
+        }
+        XCTAssertEqual(engine.deadCount, 1)
+        XCTAssertTrue(engine.isLost)
+    }
+
+    /// Walking off the side of the level loses the lemming.
+    func testWalkingOffTheSideOfTheLevelKills() {
+        let level = tinyLevel(rows: ["E...", "####"])
+        let engine = GameEngine(level: level)
+        runUntilDone(engine)
+        XCTAssertEqual(engine.deadCount, 1)
+        XCTAssertEqual(engine.lemmings.first?.state, .dead)
+    }
+
+    /// A builder never paves over steel, and walks away when its head hits a
+    /// wall instead of shrugging on the spot.
+    func testBuilderTurnsAtAWallAndNeverOverwritesSteel() {
+        let level = tinyLevel(
+            rows: [
+                "...S....",
+                "E..S....",
+                "...S....",
+                "########",
+            ],
+            skills: [.builder: 1],
+            time: 30
+        )
+        let engine = GameEngine(level: level)
+        var sawTurnedWalker = false
+        runUntilDone(engine) {
+            guard let lem = engine.lemmings.first else { return }
+            if lem.state == .walking, lem.facingRight, (engine.skillInventory[.builder] ?? 0) > 0 {
+                self.assign(.builder, engine, to: lem.id)
+            }
+            if lem.state == .walking, !lem.facingRight { sawTurnedWalker = true }
+        }
+        XCTAssertTrue(sawTurnedWalker)
+        for r in 0..<3 { XCTAssertEqual(engine.tile(r, 3), .steel) }
+    }
+
+    /// A miner that tunnels out into open air falls instead of carving
+    /// steps through the sky.
+    func testMinerFallsWhenItTunnelsIntoOpenAir() {
+        let level = tinyLevel(
+            rows: [
+                "E.......",
+                "###.....",
+                "###.....",
+                "........",
+                "SSSSSSSS",
+            ],
+            skills: [.miner: 1],
+            time: 30
+        )
+        let engine = GameEngine(level: level)
+        var sawFalling = false
+        for _ in 0..<600 {
+            engine.tick()
+            guard let lem = engine.lemmings.first else { continue }
+            if lem.state == .walking, (engine.skillInventory[.miner] ?? 0) > 0 {
+                assign(.miner, engine, to: lem.id)
+            }
+            if (engine.skillInventory[.miner] ?? 0) == 0, lem.state == .falling { sawFalling = true }
+            if lem.state == .miner {
+                XCTAssertTrue(
+                    engine.tile(lem.y + 1, Int(lem.x.rounded())).isSolid,
+                    "a miner is standing on thin air at row \(lem.y)"
+                )
+            }
+        }
+        XCTAssertTrue(sawFalling)
+    }
+
+    /// Nuking a lemming that is already drowning must not bring it back as
+    /// an Oh-No and count it dead twice.
+    func testNukeDoesNotCountADrowningLemmingTwice() {
+        let level = tinyLevel(rows: ["E.", "..", "WW", "SS"], total: 1, time: 30)
+        let engine = GameEngine(level: level)
+        while !engine.lemmings.contains(where: {
+            if case .drowning = $0.state { return true } else { return false }
+        }) {
+            engine.tick()
+        }
+        engine.nukeAll()
+        runUntilDone(engine)
+        XCTAssertEqual(engine.deadCount, 1)
+        XCTAssertFalse(engine.lemmings.contains { $0.exploded })
+    }
+
+    /// Like the original, a digger can be switched straight to a builder.
+    func testDiggerCanBeSwitchedToBuilder() {
+        let level = tinyLevel(rows: ["E.....", "######", "######", "SSSSSS"], skills: [.digger: 1, .builder: 1])
+        let engine = GameEngine(level: level)
+        while engine.lemmings.first?.state != .walking { engine.tick() }
+        let id = engine.lemmings[0].id
+        assign(.digger, engine, to: id)
+        XCTAssertEqual(engine.lemmings[0].state, .digger)
+        assign(.builder, engine, to: id)
+        XCTAssertEqual(engine.lemmings[0].state, .building(stepsLeft: 12))
+    }
+
+    /// A bomber whose fuse runs out in mid-air blows up at once, without
+    /// stopping for an Oh-No in the sky.
+    func testFallingBomberExplodesWithoutOhNo() {
+        var rows = ["E..."]
+        rows += Array(repeating: "....", count: 40)
+        rows.append("SSSS")
+        let level = tinyLevel(rows: rows, skills: [.bomber: 1, .floater: 1], time: 60)
+        let engine = GameEngine(level: level)
+        while engine.lemmings.isEmpty { engine.tick() }
+        let id = engine.lemmings[0].id
+        assign(.floater, engine, to: id)
+        assign(.bomber, engine, to: id)
+        var sawOhNo = false
+        runUntilDone(engine) {
+            if case .ohNo = engine.lemmings[0].state { sawOhNo = true }
+        }
+        XCTAssertFalse(sawOhNo)
+        XCTAssertTrue(engine.lemmings[0].exploded)
     }
 
     func testBuiltInLevelsAreWellFormed() {

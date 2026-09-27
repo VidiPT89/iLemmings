@@ -14,14 +14,16 @@ final class GameEngine: ObservableObject {
     @Published private(set) var isLost = false
     @Published var skillInventory: [LemSkill: Int]
     @Published var selectedSkill: LemSkill?
-    /// Classic 1-99 release rate (LemmingsJS `GameVictoryCondition`).
+    /// Classic 1-99 release rate: higher lets lemmings out faster.
     @Published private(set) var releaseRate: Int
     /// 1 = normal, 3 = fast-forward like the original speed control.
     @Published var gameSpeed: Int = 1
 
     private var tickCounter = 0
     private var nextID = 0
-    private var releaseTickIndex = 0
+    /// Ticks until the next lemming drops. Starts long enough to cover the
+    /// hatch opening, then reloads from the release rate after every spawn.
+    private var releaseCountdown = GameTuning.hatchOpenTicks + GameTuning.firstLemmingDelayTicks
     private var nukeArmed = false
     private var nextNukeIndex = 0
     private var entrance: (row: Int, col: Int)
@@ -35,7 +37,6 @@ final class GameEngine: ObservableObject {
         self.secondsRemaining = level.timeLimitSeconds
         self.skillInventory = level.skillCounts
         self.releaseRate = level.minReleaseRate
-        self.releaseTickIndex = level.minReleaseRate - 30
         self.entrance = Self.findEntrance(in: parsedGrid)
     }
 
@@ -78,7 +79,7 @@ final class GameEngine: ObservableObject {
         gameSpeed = 1
         tickCounter = 0
         nextID = 0
-        releaseTickIndex = level.minReleaseRate - 30
+        releaseCountdown = GameTuning.hatchOpenTicks + GameTuning.firstLemmingDelayTicks
         nukeArmed = false
         nextNukeIndex = 0
     }
@@ -87,13 +88,21 @@ final class GameEngine: ObservableObject {
     var height: Int { level.height }
     var entranceColumn: Int { entrance.col }
     var entranceRow: Int { entrance.row }
+    /// The scene swings the hatch doors open off this, so they stay in step
+    /// with the simulation through pauses and fast-forward.
+    var isHatchOpen: Bool { tickCounter >= GameTuning.hatchOpenTicks }
 
+    /// Above the level is a ceiling; past either side or below the floor is
+    /// open air, and a lemming that ends up there is lost — as in the
+    /// original. Treating everything outside as steel gave every level an
+    /// invisible floor to land on and invisible walls to turn around at.
     func tile(_ row: Int, _ col: Int) -> Tile {
-        guard row >= 0, row < height, col >= 0, col < width else { return .steel }
+        if row < 0 { return .steel }
+        guard row < height, col >= 0, col < width else { return .empty }
         return grid[row][col]
     }
 
-    private func setTile(_ row: Int, _ col: Int, _ tile: Tile) {
+    func setTile(_ row: Int, _ col: Int, _ tile: Tile) {
         guard row >= 0, row < height, col >= 0, col < width else { return }
         grid[row][col] = tile
     }
@@ -114,7 +123,11 @@ final class GameEngine: ObservableObject {
         gameSpeed = gameSpeed == 1 ? 3 : 1
     }
 
-    /// Attempts to assign the currently selected skill to the lemming at index.
+    /// Attempts to assign the currently selected skill to the lemming with
+    /// this id, following the original's rules (Lemmix `AssignSkill`): the
+    /// digging/building jobs can be handed to any lemming working on the
+    /// ground — so a Digger can be switched to a Builder mid-hole — but not
+    /// to one that is falling, climbing, floating or blocking.
     func applySelectedSkill(to lemmingID: Int) {
         guard let skill = selectedSkill,
               let idx = lemmings.firstIndex(where: { $0.id == lemmingID }),
@@ -129,26 +142,33 @@ final class GameEngine: ObservableObject {
         case .floater:
             guard !lem.hasFloater else { return }
             lem.hasFloater = true
-        case .blocker:
-            guard lem.state == .walking else { return }
-            lem.state = .blocking
-        case .builder:
-            // The original always builds exactly 12 bricks before reverting to a walker.
-            guard lem.state == .walking else { return }
-            lem.state = .building(stepsLeft: 12)
-        case .basher:
-            // Unlimited, like the original — stops at steel, open air, or a missing floor.
-            guard lem.state == .walking else { return }
-            lem.state = .basher
-        case .miner:
-            guard lem.state == .walking else { return }
-            lem.state = .miner
-        case .digger:
-            guard lem.state == .walking else { return }
-            lem.state = .digger
         case .bomber:
             guard lem.countdownTicks == 0 else { return }
             lem.countdownTicks = GameTuning.bomberFuseTicks
+        case .blocker:
+            let col = Int(lem.x.rounded())
+            let overlapsBlocker = lemmings.contains {
+                $0.id != lem.id && $0.state == .blocking && $0.y == lem.y && Int($0.x.rounded()) == col
+            }
+            guard Self.isWorkingOnTheGround(lem.state), !overlapsBlocker else { return }
+            lem.state = .blocking
+        case .builder:
+            // The original always lays exactly 12 bricks.
+            if case .building = lem.state { return }
+            guard Self.isWorkingOnTheGround(lem.state) else { return }
+            lem.state = .building(stepsLeft: 12)
+        case .basher:
+            guard lem.state != .basher, Self.isWorkingOnTheGround(lem.state) else { return }
+            lem.state = .basher
+        case .miner:
+            guard lem.state != .miner, Self.isWorkingOnTheGround(lem.state) else { return }
+            lem.state = .miner
+        case .digger:
+            guard lem.state != .digger, Self.isWorkingOnTheGround(lem.state) else { return }
+            lem.state = .digger
+        }
+        if [.blocker, .builder, .basher, .miner, .digger].contains(skill) {
+            lem.actionProgress = 0
         }
 
         lemmings[idx] = lem
@@ -156,6 +176,13 @@ final class GameEngine: ObservableObject {
         skillInventory[skill] = remaining
         if remaining <= 0, selectedSkill == skill {
             selectedSkill = nil
+        }
+    }
+
+    private static func isWorkingOnTheGround(_ state: LemState) -> Bool {
+        switch state {
+        case .walking, .shrugging, .building, .basher, .miner, .digger: return true
+        default: return false
         }
     }
 
@@ -173,12 +200,11 @@ final class GameEngine: ObservableObject {
             secondsRemaining -= 1
         }
 
-        // LemmingsJS: spawn when releaseTickIndex >= (104 - releaseRate).
         if spawnedCount < level.totalLemmings, !nukeArmed {
-            releaseTickIndex += 1
-            if releaseTickIndex >= (104 - releaseRate) {
-                releaseTickIndex = 0
+            releaseCountdown -= 1
+            if releaseCountdown <= 0 {
                 spawn()
+                releaseCountdown = GameTuning.releaseIntervalTicks(rate: releaseRate)
             }
         }
 
@@ -186,21 +212,39 @@ final class GameEngine: ObservableObject {
             armNextNukeTarget()
         }
 
-        for i in lemmings.indices {
-            stepLemming(&lemmings[i])
+        // Stepped on a local copy and published once: going through the
+        // @Published array element by element copied the whole crowd and
+        // fired a change notification for every lemming, every tick.
+        // `walk()` reads `lemmings` for blockers, which is this tick's
+        // starting positions — exactly what it needs.
+        var crowd = lemmings
+        for i in crowd.indices {
+            stepLemming(&crowd[i])
         }
+        // A builder can lay a brick right where another lemming is standing.
+        // That lemming ends up on top of the new brick, as in the original,
+        // rather than buried inside it. The builder only lays a brick with
+        // clear space above it, so there is always room to step up.
+        for i in crowd.indices where crowd[i].isAlive {
+            let col = Int(crowd[i].x.rounded())
+            if tile(crowd[i].y, col).isSolid, !tile(crowd[i].y - 1, col).isSolid {
+                crowd[i].y -= 1
+            }
+        }
+        lemmings = crowd
 
         evaluateEndConditions()
     }
 
     /// Original nuke arms one living lemming per tick, not the whole crowd
-    /// in a single frame.
+    /// in a single frame. Lemmings already splatting or drowning are skipped:
+    /// arming them used to bring them back as an Oh-No, and count them dead
+    /// a second time when they blew up.
     private func armNextNukeTarget() {
         while nextNukeIndex < lemmings.count {
             let i = nextNukeIndex
             nextNukeIndex += 1
-            guard lemmings[i].isAlive, lemmings[i].countdownTicks == 0 else { continue }
-            if case .ohNo = lemmings[i].state { continue }
+            guard lemmings[i].canReceiveSkill, lemmings[i].countdownTicks == 0 else { continue }
             lemmings[i].countdownTicks = GameTuning.bomberFuseTicks
             return
         }
@@ -239,280 +283,11 @@ final class GameEngine: ObservableObject {
         }
     }
 
-    private func isSolid(_ t: Tile) -> Bool {
-        t == .dirt || t == .steel
-    }
+    // MARK: - Hooks for the lemming state machine (GameEngineLemmings.swift)
+    //
+    // Internal rather than private only because Swift's `private` is
+    // file-scoped and the state machine lives in its own file.
 
-    private func stepLemming(_ lem: inout Lemming) {
-        guard lem.isAlive else { return }
-        let col = Int(lem.x.rounded())
-
-        if lem.countdownTicks > 0 {
-            lem.countdownTicks -= 1
-            if lem.countdownTicks == 0 {
-                lem.state = .ohNo(ticksLeft: GameTuning.ohNoTicks)
-                return
-            }
-        }
-
-        if case .drowning(let ticksLeft) = lem.state {
-            lem.state = ticksLeft <= 0 ? .dead : .drowning(ticksLeft: ticksLeft - 1)
-            return
-        }
-        if case .splatting(let ticksLeft) = lem.state {
-            lem.state = ticksLeft <= 0 ? .dead : .splatting(ticksLeft: ticksLeft - 1)
-            return
-        }
-        if case .shrugging(let ticksLeft) = lem.state {
-            lem.state = ticksLeft <= 0 ? .walking : .shrugging(ticksLeft: ticksLeft - 1)
-            return
-        }
-
-        if tile(lem.y, col) == .water {
-            drown(&lem)
-            return
-        }
-        if tile(lem.y, col) == .trap {
-            splat(&lem)
-            return
-        }
-        if tile(lem.y, col) == .exit {
-            lem.state = .saved
-            savedCount += 1
-            return
-        }
-
-        switch lem.state {
-        case .falling:
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.fallTicksPerStep else { break }
-            lem.actionProgress = 0
-            let below = lem.y + 1
-            if isSolid(tile(below, col)) {
-                if lem.fallDistance > GameTuning.maxSafeFall && !lem.hasFloater {
-                    splat(&lem)
-                } else {
-                    lem.state = .walking
-                    lem.fallDistance = 0
-                }
-            } else {
-                lem.y = below
-                lem.fallDistance += 1
-                lem.state = lem.hasFloater && lem.fallDistance > 1 ? .floating : .falling
-            }
-
-        case .floating:
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.floatTicksPerStep else { break }
-            lem.actionProgress = 0
-            let below = lem.y + 1
-            if isSolid(tile(below, col)) {
-                lem.state = .walking
-                lem.fallDistance = 0
-            } else {
-                lem.y = below
-            }
-
-        case .walking:
-            lem.actionProgress += 1
-            if lem.actionProgress >= GameTuning.walkTicksPerStep {
-                lem.actionProgress = 0
-                walk(&lem)
-            }
-
-        case .blocking:
-            // Stands still indefinitely, acting as an obstacle in walk() — but
-            // only while it still has ground. Every other state re-checks its
-            // own footing as it moves; a blocker never moves, so without this
-            // a Miner/Basher/Bomber clearing the tile underneath left it
-            // hanging in mid-air, still turning walkers around.
-            if !isSolid(tile(lem.y + 1, col)) {
-                lem.state = .falling
-                lem.actionProgress = 0
-                lem.fallDistance = 0
-            }
-
-        case .building(let steps):
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.workTicksPerStep else { break }
-            lem.actionProgress = 0
-            let dir = lem.facingRight ? 1 : -1
-            let frontCol = col + dir
-            // Each step moves the lemming one tile forward and one row up,
-            // to (lem.y - 1, frontCol); the tile that supports that new spot
-            // is one row *below* it (this engine's convention throughout:
-            // footing for row R is at row R+1), which is exactly the OLD
-            // row, at the NEW column — so the brick goes at (lem.y, frontCol)
-            // before y is decremented. The previous version moved x by only
-            // 0.5/step and y only every other step, which desynced brick
-            // placement from the lemming's actual column once climbing got
-            // capped at row 0 — bricks kept landing one row too low to
-            // support the still-advancing lemming, so it ended up walking
-            // over nothing until it fell. Moving a full tile every step
-            // keeps brick and position locked together, every step.
-            if steps <= 0 {
-                lem.state = .shrugging(ticksLeft: 16)
-            } else if lem.y - 1 < 0 {
-                lem.state = .shrugging(ticksLeft: 16)
-            } else if isSolid(tile(lem.y - 1, frontCol)) {
-                lem.state = .shrugging(ticksLeft: 16)
-            } else {
-                setTile(lem.y, frontCol, .dirt)
-                lem.y -= 1
-                lem.x = Double(frontCol)
-                lem.state = .building(stepsLeft: steps - 1)
-            }
-
-        case .basher:
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.workTicksPerStep else { break }
-            lem.actionProgress = 0
-            let dir = lem.facingRight ? 1 : -1
-            let frontCol = col + dir
-            let noFloorAhead = !isSolid(tile(lem.y + 1, frontCol))
-            if tile(lem.y, frontCol) == .steel || noFloorAhead {
-                lem.state = .walking
-            } else if !isSolid(tile(lem.y, frontCol)) {
-                lem.state = .walking
-            } else {
-                setTile(lem.y, frontCol, .empty)
-                lem.x = Double(frontCol)
-            }
-
-        case .miner:
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.workTicksPerStep else { break }
-            lem.actionProgress = 0
-            let dir = lem.facingRight ? 1 : -1
-            let frontCol = col + dir
-            if tile(lem.y, frontCol) == .steel || tile(lem.y + 1, frontCol) == .steel {
-                lem.state = .walking
-            } else {
-                setTile(lem.y, frontCol, .empty)
-                setTile(lem.y + 1, frontCol, .empty)
-                lem.x = Double(frontCol)
-                lem.y += 1
-            }
-
-        case .digger:
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.walkTicksPerStep else { break }
-            lem.actionProgress = 0
-            let below = tile(lem.y + 1, col)
-            if below == .steel || !isSolid(below) {
-                lem.state = .falling
-                lem.actionProgress = 0
-            } else {
-                setTile(lem.y + 1, col, .empty)
-                lem.y += 1
-            }
-
-        case .climbing:
-            lem.actionProgress += 1
-            guard lem.actionProgress >= GameTuning.climbTicksPerStep else { break }
-            lem.actionProgress = 0
-            let dir = lem.facingRight ? 1 : -1
-            let wallCol = col + dir
-            let above = lem.y - 1
-            if above < 0 {
-                lem.facingRight.toggle()
-                lem.state = .walking
-            } else if isSolid(tile(above, wallCol)) {
-                lem.y = above
-            } else {
-                lem.y = above
-                lem.x = Double(wallCol)
-                lem.state = .walking
-            }
-
-        case .ohNo(let ticksLeft):
-            if ticksLeft <= 0 {
-                explode(atRow: lem.y, col: col)
-                lem.state = .dead
-                deadCount += 1
-            } else {
-                lem.state = .ohNo(ticksLeft: ticksLeft - 1)
-            }
-
-        case .shrugging, .splatting, .drowning, .saved, .dead:
-            break
-        }
-    }
-
-    private func drown(_ lem: inout Lemming) {
-        guard lem.isAlive else { return }
-        if case .drowning = lem.state { return }
-        if case .splatting = lem.state { return }
-        lem.state = .drowning(ticksLeft: 16)
-        lem.countdownTicks = 0
-        deadCount += 1
-    }
-
-    private func splat(_ lem: inout Lemming) {
-        guard lem.isAlive else { return }
-        if case .splatting = lem.state { return }
-        lem.state = .splatting(ticksLeft: 16)
-        lem.countdownTicks = 0
-        deadCount += 1
-    }
-
-    /// Crater clears diggable ground only. Steel, exits and hatches stay,
-    /// matching LemmingsJS `clearGroundWithMask` (steel is not terrain).
-    private func explode(atRow row: Int, col: Int) {
-        for dr in -1...1 {
-            for dc in -1...1 {
-                let t = tile(row + dr, col + dc)
-                if t == .dirt || t == .trap {
-                    setTile(row + dr, col + dc, .empty)
-                }
-            }
-        }
-    }
-
-    private func walk(_ lem: inout Lemming) {
-        let col = Int(lem.x.rounded())
-        let dir = lem.facingRight ? 1 : -1
-        let frontCol = col + dir
-
-        let blockedByLemming = lemmings.contains { other in
-            guard other.id != lem.id, other.state == .blocking, other.y == lem.y else { return false }
-            let otherCol = Int(other.x.rounded())
-            return otherCol == col || otherCol == frontCol
-        }
-        if blockedByLemming {
-            lem.facingRight.toggle()
-            return
-        }
-
-        let below = lem.y + 1
-        if !isSolid(tile(below, col)) {
-            lem.state = .falling
-            lem.actionProgress = 0
-            return
-        }
-
-        if isSolid(tile(lem.y, frontCol)) {
-            if isSolid(tile(lem.y - 1, frontCol)) {
-                if lem.hasClimber {
-                    lem.state = .climbing
-                } else {
-                    lem.facingRight.toggle()
-                }
-                return
-            }
-            lem.y -= 1
-            lem.x += Double(dir)
-        } else {
-            lem.x += Double(dir)
-        }
-
-        // Check the footing of the tile just stepped onto, on this same tick.
-        // Leaving it to the next walk step meant a lemming that walked off a
-        // ledge stood in the walking pose over thin air for the whole gap
-        // between steps before the fall began.
-        if !isSolid(tile(lem.y + 1, Int(lem.x.rounded()))) {
-            lem.state = .falling
-            lem.actionProgress = 0
-        }
-    }
+    func countDeath() { deadCount += 1 }
+    func countSaved() { savedCount += 1 }
 }

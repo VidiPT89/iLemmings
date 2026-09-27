@@ -40,7 +40,17 @@ private struct LevelRow: View {
     let level: LevelDefinition
     let index: Int
     let unlocked: Bool
-    @State private var stars = 0
+    /// Bound to the stored rating itself, so a row redraws the moment a win
+    /// is recorded. Read once in `onAppear`, it could still show the old
+    /// rating after coming back from the level.
+    @AppStorage private var stars: Int
+
+    init(level: LevelDefinition, index: Int, unlocked: Bool) {
+        self.level = level
+        self.index = index
+        self.unlocked = unlocked
+        _stars = AppStorage(wrappedValue: 0, StarsStore.key(level.id))
+    }
 
     var body: some View {
         HStack {
@@ -77,6 +87,5 @@ private struct LevelRow: View {
         .padding()
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .opacity(unlocked ? 1 : 0.6)
-        .onAppear { stars = StarsStore.stars(for: level.id) }
     }
 }

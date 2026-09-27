@@ -51,12 +51,10 @@ extension GameScene {
             x: CGFloat(engine.entranceColumn) * tileSize + tileSize / 2,
             y: flipRow(engine.entranceRow)
         )
-        // The shutters come up a beat after the level starts, like the
-        // original's opening — the first lemming drops through the gap.
-        node.run(.sequence([
-            .wait(forDuration: 0.8),
-            .setTexture(StructureSprites.hatchOpen)
-        ]))
+        // The shutters come up when the engine says so (see `updateHatch`),
+        // not on a wall-clock timer that kept running through the pause
+        // screen and ignored fast-forward.
+        node.name = "hatch"
         return node
     }
 

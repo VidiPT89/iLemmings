@@ -11,12 +11,13 @@ final class SoundManager: ObservableObject {
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
 
     enum Effect {
-        case select, assign, win, lose, explode, splat, drown
+        case select, assign, saved, win, lose, explode, splat, drown
 
         var frequency: Double {
             switch self {
             case .select: return 660
             case .assign: return 880
+            case .saved: return 1320
             case .win: return 990
             case .lose: return 220
             case .explode: return 110

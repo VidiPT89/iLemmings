@@ -16,6 +16,8 @@ struct GameView: View {
     @StateObject private var engine: GameEngine
     @State private var scene: GameScene
     @State private var isPaused = false
+    /// The pre-level screen. The clock and the hatch wait until it's gone.
+    @State private var showBriefing = true
     @State private var showResult = false
     @State private var earnedStars = 0
     @State private var lastSkillTotal: Int
@@ -50,10 +52,17 @@ struct GameView: View {
                         }
                 }
 
-                BottomControlPanel(engine: engine, isPaused: $isPaused, viewport: viewport)
+                BottomControlPanel(
+                    engine: engine,
+                    isPaused: $isPaused,
+                    viewport: viewport,
+                    onJumpToColumn: { scene.centerCamera(onColumn: $0) }
+                )
             }
 
-            if isPaused {
+            if showBriefing {
+                LevelBriefing(level: level, number: levelIndex + 1) { showBriefing = false }
+            } else if isPaused {
                 PauseOverlay(
                     onResume: { isPaused = false },
                     onRestart: { restart() },
@@ -61,7 +70,8 @@ struct GameView: View {
                 )
             }
         }
-        .onChange(of: isPaused) { _, newValue in scene.setEnginePaused(newValue) }
+        .onChange(of: isPaused) { _, _ in syncEnginePause() }
+        .onChange(of: showBriefing) { _, _ in syncEnginePause() }
         .onChange(of: engine.skillInventory) { _, newValue in
             let total = newValue.values.reduce(0, +)
             if total < lastSkillTotal {
@@ -70,14 +80,16 @@ struct GameView: View {
             }
             lastSkillTotal = total
         }
+        .onChange(of: engine.savedCount) { old, new in
+            if new > old { sound.play(.saved) }
+        }
         .onChange(of: engine.selectedSkill) { _, newValue in
             if newValue != nil { sound.play(.select) }
         }
         .onChange(of: engine.isWon) { _, newValue in
             guard newValue else { return }
             // Show what this run earned, not the best ever stored for the
-            // level — `record` returns the running best, so replaying a level
-            // you'd already 3-starred used to claim 3 stars for a 1-star run.
+            // level, so a 1-star replay of a 3-star level says 1 star.
             earnedStars = level.stars(saved: engine.savedCount, secondsRemaining: engine.secondsRemaining)
             StarsStore.record(earnedStars, for: level.id)
             // Unlocking belongs to winning, not to pressing a particular
@@ -94,11 +106,16 @@ struct GameView: View {
             Haptics.levelFailed()
             showResult = true
         }
-        .onAppear { bindCallbacks(to: scene) }
+        .onAppear {
+            bindCallbacks(to: scene)
+            syncEnginePause()
+        }
         .sheet(isPresented: $showResult) {
             ResultView(
                 won: engine.isWon,
                 stars: earnedStars,
+                rescuedPercent: percent(engine.savedCount),
+                neededPercent: percent(level.neededToSave),
                 hasNextLevel: hasNextLevel,
                 onNext: { advanceToNextLevel() },
                 onRetry: { showResult = false; restart() },
@@ -119,7 +136,13 @@ struct GameView: View {
         scene.onExplosion = { sound.play(.explode) }
         scene.onSplat = { sound.play(.splat) }
         scene.onDrown = { sound.play(.drown) }
-        scene.onTogglePause = { isPaused.toggle() }
+        // On the briefing any key starts the level, like the original.
+        scene.onKeyPressed = {
+            guard showBriefing else { return false }
+            showBriefing = false
+            return true
+        }
+        scene.onTogglePause = { if !showBriefing { isPaused.toggle() } }
         scene.onViewportChanged = { viewport = $0 }
     }
 
@@ -136,6 +159,15 @@ struct GameView: View {
         startFreshScene()
     }
 
+    private func syncEnginePause() {
+        scene.setEnginePaused(isPaused || showBriefing)
+    }
+
+    private func percent(_ lemmings: Int) -> Int {
+        guard level.totalLemmings > 0 else { return 0 }
+        return Int((Double(lemmings) / Double(level.totalLemmings) * 100).rounded())
+    }
+
     private func restart() {
         engine.reset()
         startFreshScene()
@@ -150,6 +182,8 @@ struct GameView: View {
         scene = fresh
         sceneGeneration += 1
         isPaused = false
+        showBriefing = true
+        fresh.setEnginePaused(true)
         showResult = false
         earnedStars = 0
         viewport = nil
@@ -159,7 +193,7 @@ struct GameView: View {
 
 /// The bright green "LCD"/dot-matrix look of the original counters
 /// (OUT / IN / TIME), instead of a brand-colored UI font.
-private let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
+let lcdGreen = Color(red: 0.35, green: 0.95, blue: 0.35)
 
 /// The level at a glance, sized to its own proportions and sitting inside
 /// the control panel — which is where the original keeps it.
@@ -175,6 +209,9 @@ private struct MiniMap: View {
     @ObservedObject var engine: GameEngine
     /// The columns currently on screen, drawn as a box like the original's.
     let viewport: ClosedRange<Double>?
+    /// Clicking or dragging on the map scrolls the level there, as in the
+    /// original.
+    let onJumpToColumn: (Double) -> Void
 
     private var aspect: CGFloat {
         CGFloat(max(engine.width, 1)) / CGFloat(max(engine.height, 1))
@@ -222,12 +259,21 @@ private struct MiniMap: View {
         }
         .frame(width: min(max(height * aspect, 72), 220), height: height)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
+        .overlay(GeometryReader { proxy in
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
+                    guard proxy.size.width > 0 else { return }
+                    onJumpToColumn(Double(drag.location.x / proxy.size.width) * Double(engine.width))
+                })
+        })
         .accessibilityHidden(true)
     }
 
     private func miniColor(_ tile: Tile) -> Color? {
         switch tile {
         case .dirt: return Color(red: 0.55, green: 0.34, blue: 0.10)
+        case .brick: return Color(red: 0.85, green: 0.50, blue: 0.24)
         case .steel: return Color(red: 0.62, green: 0.62, blue: 0.68)
         case .trap: return Color(red: 0.85, green: 0.15, blue: 0.12)
         case .water: return Color(red: 0.18, green: 0.45, blue: 0.78)
@@ -275,6 +321,7 @@ private struct BottomControlPanel: View {
     @EnvironmentObject var sound: SoundManager
     @Binding var isPaused: Bool
     let viewport: ClosedRange<Double>?
+    let onJumpToColumn: (Double) -> Void
     @State private var showNukeConfirm = false
 
     var body: some View {
@@ -297,7 +344,7 @@ private struct BottomControlPanel: View {
                 sound.isMuted.toggle()
             }
             Spacer(minLength: 8)
-            MiniMap(engine: engine, viewport: viewport)
+            MiniMap(engine: engine, viewport: viewport, onJumpToColumn: onJumpToColumn)
             Spacer(minLength: 8)
             statsRow
         }
@@ -396,100 +443,5 @@ private struct SkillButton: View {
         .opacity(count == 0 ? 0.35 : 1)
         .accessibilityLabel(loc.string(skill.locKey))
         .accessibilityValue("\(count)")
-    }
-}
-
-private struct PauseOverlay: View {
-    @EnvironmentObject var loc: LocalizationManager
-    let onResume: () -> Void
-    let onRestart: () -> Void
-    let onMenu: () -> Void
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.6).ignoresSafeArea()
-            VStack(spacing: 20) {
-                Text(loc.string(.pauseTitle)).font(.largeTitle.bold()).foregroundStyle(.white)
-                Button(loc.string(.pauseResume), action: onResume).buttonStyle(BrandButtonStyle())
-                Button(loc.string(.pauseRestart), action: onRestart).buttonStyle(BrandButtonStyle())
-                Button(loc.string(.pauseMenu), action: onMenu).buttonStyle(BrandButtonStyle())
-            }
-            .padding(32)
-        }
-    }
-}
-
-private struct ResultView: View {
-    @EnvironmentObject var loc: LocalizationManager
-    let won: Bool
-    let stars: Int
-    let hasNextLevel: Bool
-    let onNext: () -> Void
-    let onRetry: () -> Void
-    let onExit: () -> Void
-
-    var body: some View {
-        ZStack {
-            if won {
-                ConfettiView()
-            }
-
-            VStack(spacing: 20) {
-                Image(systemName: won ? "checkmark.seal.fill" : "xmark.seal.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(won ? Color.green : Color.red)
-                    .transition(.scale.combined(with: .opacity))
-                Text(loc.string(won ? .levelWinTitle : .levelLoseTitle)).font(.title.bold())
-                if won {
-                    HStack(spacing: 6) {
-                        ForEach(0..<3, id: \.self) { i in
-                            Image(systemName: i < stars ? "star.fill" : "star")
-                                .font(.title2)
-                                .foregroundStyle(i < stars ? Color.brandAmber : .secondary.opacity(0.3))
-                                .scaleEffect(i < stars ? 1 : 0.85)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.6).delay(Double(i) * 0.12), value: stars)
-                        }
-                    }
-                }
-                Text(loc.string(won ? .levelWinBody : .levelLoseBody))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-
-                // Three distinct outcomes, not two: play on, try again, or
-                // leave. "Back to levels" used to run the same action as
-                // "next level", so both buttons did the same thing.
-                if won, hasNextLevel {
-                    Button(loc.string(.nextLevel), action: onNext)
-                        .buttonStyle(BrandButtonStyle())
-                    Button(loc.string(.backToLevels), action: onExit)
-                        .buttonStyle(.plain)
-                        .padding(.top, 4)
-                } else if won {
-                    // Last level: there is nowhere to play on to.
-                    Button(loc.string(.backToLevels), action: onExit)
-                        .buttonStyle(BrandButtonStyle())
-                } else {
-                    Button(loc.string(.retryLevel), action: onRetry)
-                        .buttonStyle(BrandButtonStyle())
-                    Button(loc.string(.backToLevels), action: onExit)
-                        .buttonStyle(.plain)
-                        .padding(.top, 4)
-                }
-            }
-            .padding(32)
-        }
-    }
-}
-
-private struct BrandButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .fontWeight(.semibold)
-            .frame(maxWidth: 260)
-            .padding()
-            .background(Color.brandGradient)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
     }
 }

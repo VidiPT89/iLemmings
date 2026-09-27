@@ -32,6 +32,15 @@
 "levelWinBody" = "Salvaste lemmings suficientes.";
 "levelLoseTitle" = "Nível Falhado";
 "levelLoseBody" = "Não saíram lemmings suficientes.";
+"resultRescued" = "Salvaste %d%%";
+"resultNeeded" = "Precisavas de %d%%";
+"briefingLevel" = "Nível";
+"briefingLemmings" = "Número de Lemmings";
+"briefingToBeSaved" = "A Salvar";
+"briefingReleaseRate" = "Ritmo de Saída";
+"briefingTime" = "Tempo";
+"briefingRating" = "Dificuldade";
+"briefingStart" = "Toca ou carrega numa tecla para começar";
 "nextLevel" = "Próximo Nível";
 "retryLevel" = "Repetir";
 "backToLevels" = "Níveis";

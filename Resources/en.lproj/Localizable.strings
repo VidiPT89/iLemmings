@@ -32,6 +32,15 @@
 "levelWinBody" = "You saved enough lemmings.";
 "levelLoseTitle" = "Level Failed";
 "levelLoseBody" = "Not enough lemmings made it out.";
+"resultRescued" = "You rescued %d%%";
+"resultNeeded" = "You needed %d%%";
+"briefingLevel" = "Level";
+"briefingLemmings" = "Number of Lemmings";
+"briefingToBeSaved" = "To Be Saved";
+"briefingReleaseRate" = "Release Rate";
+"briefingTime" = "Time";
+"briefingRating" = "Rating";
+"briefingStart" = "Tap or press any key to start";
 "nextLevel" = "Next Level";
 "retryLevel" = "Retry";
 "backToLevels" = "Levels";

@@ -4,11 +4,17 @@ import Foundation
 enum Tile: Character {
     case empty = "."
     case dirt = "#"      // diggable in every direction
+    case brick = "B"     // laid by a Builder; diggable like dirt
     case steel = "S"     // indestructible
     case entrance = "E"
     case exit = "X"
     case trap = "T"      // spikes: splat
     case water = "W"     // drown (floater does not save you)
+
+    /// Ground a lemming can stand on and cannot walk through.
+    var isSolid: Bool { self == .dirt || self == .brick || self == .steel }
+    /// Ground that bashing, mining, digging and explosions remove.
+    var isDiggable: Bool { self == .dirt || self == .brick }
 }
 
 enum LemSkill: String, CaseIterable, Identifiable {
@@ -70,6 +76,10 @@ struct Lemming: Identifiable {
     /// tick (20 tiles/sec), which made lemmings cross an entire level (or
     /// tunnel through it) and die in well under a second.
     var actionProgress: Int = 0
+    /// Set when this lemming died in its own explosion, so the scene can
+    /// draw the blast whether or not an Oh-No came first (a falling bomber
+    /// goes off straight away, with no Oh-No).
+    var exploded: Bool = false
     var isAlive: Bool { state != .dead && state != .saved }
     var canReceiveSkill: Bool {
         switch state {
@@ -105,12 +115,11 @@ struct LevelDefinition: Identifiable {
     let rows: [String]           // ASCII rows, top to bottom, matching Tile raw values
     let totalLemmings: Int
     let neededToSave: Int
-    let spawnIntervalTicks: Int
+    /// The release rate (1-99) the level starts at, and the lowest the
+    /// player can turn it down to — how the original's levels define it.
+    let minReleaseRate: Int
     let timeLimitSeconds: Int
     let skillCounts: [LemSkill: Int]
-    /// Classic release-rate floor (1-99). Mapped from `spawnIntervalTicks`
-    /// with the LemmingsJS formula interval = 104 - rate.
-    var minReleaseRate: Int { min(99, max(1, 104 - spawnIntervalTicks)) }
 
     var width: Int { rows.first?.count ?? 0 }
     var height: Int { rows.count }

@@ -37,7 +37,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 10,
             neededToSave: 5,
-            spawnIntervalTicks: 96,
+            minReleaseRate: 8,
             timeLimitSeconds: 180,
             skillCounts: [.builder: 4, .blocker: 2, .climber: 1, .floater: 1]
         )
@@ -62,7 +62,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 12,
             neededToSave: 6,
-            spawnIntervalTicks: 40,
+            minReleaseRate: 64,
             timeLimitSeconds: 200,
             skillCounts: [.basher: 3, .climber: 3, .builder: 2, .blocker: 1]
         )
@@ -84,7 +84,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 14,
             neededToSave: 7,
-            spawnIntervalTicks: 96,
+            minReleaseRate: 8,
             timeLimitSeconds: 220,
             skillCounts: [.builder: 4, .bomber: 3, .blocker: 2, .floater: 2]
         )
@@ -111,7 +111,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 16,
             neededToSave: 8,
-            spawnIntervalTicks: 96,
+            minReleaseRate: 8,
             timeLimitSeconds: 240,
             skillCounts: [.builder: 4, .blocker: 2, .floater: 1, .bomber: 1]
         )
@@ -138,7 +138,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 10,
             neededToSave: 6,
-            spawnIntervalTicks: 96,
+            minReleaseRate: 8,
             timeLimitSeconds: 180,
             skillCounts: [.builder: 5, .blocker: 2, .floater: 2]
         )
@@ -165,7 +165,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 12,
             neededToSave: 8,
-            spawnIntervalTicks: 38,
+            minReleaseRate: 66,
             timeLimitSeconds: 200,
             skillCounts: [.climber: 12, .builder: 2, .blocker: 1, .floater: 2]
         )
@@ -190,7 +190,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 14,
             neededToSave: 8,
-            spawnIntervalTicks: 96,
+            minReleaseRate: 8,
             timeLimitSeconds: 220,
             skillCounts: [.builder: 4, .blocker: 2, .bomber: 2, .miner: 2]
         )
@@ -216,7 +216,7 @@ enum LevelLibrary {
             rows: rows,
             totalLemmings: 16,
             neededToSave: 10,
-            spawnIntervalTicks: 96,
+            minReleaseRate: 8,
             timeLimitSeconds: 240,
             skillCounts: [.builder: 5, .blocker: 2, .floater: 2, .climber: 1]
         )

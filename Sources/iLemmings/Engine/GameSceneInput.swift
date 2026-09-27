@@ -90,6 +90,7 @@ extension GameScene {
     /// Returns false for keys this scene doesn't use, so they fall through to
     /// the rest of the responder chain (menu shortcuts, ⌘Q, and so on).
     private func handleKey(_ characters: String) -> Bool {
+        if onKeyPressed?() == true { return true }
         guard let key = characters.lowercased().first else { return false }
         switch key {
         case " ":

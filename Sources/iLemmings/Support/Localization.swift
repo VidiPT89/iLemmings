@@ -57,6 +57,15 @@ enum LocKey: String {
     case levelWinBody
     case levelLoseTitle
     case levelLoseBody
+    case resultRescued
+    case resultNeeded
+    case briefingLevel
+    case briefingLemmings
+    case briefingToBeSaved
+    case briefingReleaseRate
+    case briefingTime
+    case briefingRating
+    case briefingStart
     case nextLevel
     case retryLevel
     case backToLevels

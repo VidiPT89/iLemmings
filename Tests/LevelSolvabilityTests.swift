@@ -41,13 +41,11 @@ final class LevelSolvabilityTests: XCTestCase {
             let col = Int(lem.x.rounded())
             let here = engine.tile(lem.y, col)
             XCTAssertFalse(
-                isSolid(here),
+                here.isSolid,
                 "\(levelID): a \(lem.state) lemming is inside \(here) at row \(lem.y), col \(col)"
             )
         }
     }
-
-    private func isSolid(_ t: Tile) -> Bool { t == .dirt || t == .steel }
 
     @discardableResult
     private func assign(_ engine: GameEngine, _ skill: LemSkill, to id: Int) -> Bool {
@@ -83,7 +81,7 @@ final class LevelSolvabilityTests: XCTestCase {
                 let dir = lem.facingRight ? 1 : -1
                 let front = engine.tile(lem.y, col + dir)
                 let up = engine.tile(lem.y - 1, col + dir)
-                if isSolid(front) && isSolid(up) {
+                if front.isSolid && up.isSolid {
                     assign(engine, .basher, to: lem.id)
                     if !lem.hasClimber { assign(engine, .climber, to: lem.id) }
                 }
@@ -97,7 +95,7 @@ final class LevelSolvabilityTests: XCTestCase {
         let front = col + dir
         let frontTile = engine.tile(lead.y, front)
         let belowFront = engine.tile(lead.y + 1, front)
-        if frontTile == .trap || frontTile == .water || !isSolid(belowFront) {
+        if frontTile == .trap || frontTile == .water || !belowFront.isSolid {
             assign(engine, .builder, to: lead.id)
         }
     }

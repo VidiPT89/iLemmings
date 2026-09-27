@@ -9,7 +9,7 @@ import SpriteKit
 /// to every tile is what made this playfield read as flat coloured blocks.
 enum TerrainRenderer {
 
-    enum Style: Hashable { case dirt, grassCap, steel, trap, water }
+    enum Style: Hashable { case dirt, grassCap, steel, trap, water, brick }
 
     /// The four tiles around the one being drawn. Passing the tiles rather
     /// than booleans lets each material ask its own question: dirt wants to
@@ -36,8 +36,9 @@ enum TerrainRenderer {
             // fringe underwater, and so did the floor under a spike pit.
             switch above {
             case .empty, .entrance, .exit: return .grassCap
-            case .dirt, .steel, .water, .trap: return .dirt
+            case .dirt, .brick, .steel, .water, .trap: return .dirt
             }
+        case .brick: return .brick
         case .steel: return .steel
         case .trap: return .trap
         case .water: return .water
@@ -63,9 +64,11 @@ enum TerrainRenderer {
         // Per-column fringe heights, fixed per tile, so a grass ledge has an
         // uneven silhouette against the sky instead of a ruled green line.
         let fringe = (0..<size).map { _ in Int.random(in: 0...3, using: &rng) }
+        // A brick is a thin plank, so the earth beside one still crumbles
+        // away into the open air around it.
         let solid = Edges(
-            n: isSolid(neighbours.n), e: isSolid(neighbours.e),
-            s: isSolid(neighbours.s), w: isSolid(neighbours.w)
+            n: isGround(neighbours.n), e: isGround(neighbours.e),
+            s: isGround(neighbours.s), w: isGround(neighbours.w)
         )
         let same = Edges(
             n: neighbours.n == tile, e: neighbours.e == tile,
@@ -81,7 +84,7 @@ enum TerrainRenderer {
 
         for y in 0..<size {
             for x in 0..<size {
-                guard isFilled(x: x, y: y, solid: edges, steel: squaredOff) else { continue }
+                guard style == .brick || isFilled(x: x, y: y, solid: edges, steel: squaredOff) else { continue }
                 guard let color = pixel(
                     style: style, x: x, y: y, fringe: fringe, same: same,
                     row: row, col: col, phase: phase, rng: &rng
@@ -99,10 +102,6 @@ enum TerrainRenderer {
 
     private struct Edges {
         let n: Bool, e: Bool, s: Bool, w: Bool
-    }
-
-    private static func isSolid(_ tile: Tile) -> Bool {
-        tile == .dirt || tile == .steel
     }
 
     // MARK: - Per-material pixels
@@ -129,7 +128,27 @@ enum TerrainRenderer {
 
         case .water:
             return waterPixel(x: x, y: y, hasSurface: !same.n, phase: phase, rng: &rng)
+
+        case .brick:
+            return brickPixel(x: x, y: y)
         }
+    }
+
+    private static func isGround(_ tile: Tile) -> Bool {
+        tile == .dirt || tile == .steel
+    }
+
+    /// A Builder's brick: a thin plank across the top of the cell, where the
+    /// lemming on it stands. Filling the whole cell drew each step of a
+    /// staircase as a floating block of earth with grass on top.
+    private static func brickPixel(x: Int, y: Int) -> CGColor? {
+        let thickness = 6
+        let depth = size - 1 - y
+        guard depth < thickness else { return nil }
+        if depth == 0 { return rgb(0.98, 0.78, 0.52) }            // lit top edge
+        if depth == thickness - 1 { return rgb(0.42, 0.20, 0.08) } // underside
+        if (x + (depth > 2 ? 4 : 0)) % 8 == 0 { return rgb(0.50, 0.25, 0.10) } // mortar
+        return rgb(0.85, 0.50, 0.24)
     }
 
     /// Two-tone dither with scattered pebbles — the original's dirt is a

@@ -27,4 +27,22 @@ enum GameTuning {
     /// lemming walks — the original's ActionBashSystem/ActionBuildSystem
     /// only advance once every 16-24 ticks (vs. walking's every tick).
     static let workTicksPerStep = 24
+
+    /// The original ran at one frame every 60ms (~16.7 fps); this engine
+    /// ticks 20 times a second, so one original frame is 1.2 ticks.
+    static let ticksPerOriginalFrame = 1.2
+    /// The hatch opens a beat after the level starts, and the first lemming
+    /// drops 20 frames after that (Lemmix `NextLemmingCountDown := 20`).
+    /// Spawning before the doors were open had lemmings falling out of a
+    /// closed hatch on the fast-release levels.
+    static let hatchOpenTicks = 24
+    static let firstLemmingDelayTicks = 24
+
+    /// Gap between two lemmings at a given release rate, straight from the
+    /// original (Lemmix `CalculateNextLemmingCountdown`): `(99 - rate) / 2 + 4`
+    /// frames — 53 frames at rate 1, 4 frames at rate 99.
+    static func releaseIntervalTicks(rate: Int) -> Int {
+        let frames = (99 - min(99, max(1, rate))) / 2 + 4
+        return Int((Double(frames) * ticksPerOriginalFrame).rounded())
+    }
 }
