@@ -82,6 +82,95 @@ final class SceneSnapshotTests: XCTestCase {
         )
     }
 
+    func testPauseFreezesTheWholeSceneAndClock() {
+        let engine = GameEngine(level: LevelLibrary.all[1])
+        let scene = GameScene(engine: engine)
+        let view = SKView(frame: CGRect(x: 0, y: 0, width: 900, height: 520))
+        view.presentScene(scene)
+        scene.setEnginePaused(true)
+        let remaining = engine.secondsRemaining
+        for frame in 0..<120 { scene.update(Double(frame) / 60 + 1) }
+        XCTAssertEqual(engine.secondsRemaining, remaining)
+        XCTAssertEqual(engine.spawnedCount, 0)
+        XCTAssertTrue(scene.children.allSatisfy(\.isPaused))
+        scene.setEnginePaused(false)
+        XCTAssertTrue(scene.children.allSatisfy { !$0.isPaused })
+    }
+
+    func testEdgeScrollIsIndependentOfDisplayRefreshRate() {
+        func distance(fps: Int) -> CGFloat {
+            let scene = GameScene(engine: GameEngine(level: LevelLibrary.all[0]))
+            scene.resizeViewport(to: CGSize(width: 100, height: 500))
+            scene.centerCamera(onColumn: 5)
+            let before = scene.gameCamera.position.x
+            for _ in 0..<fps {
+                scene.lastPointer = CGPoint(
+                    x: scene.gameCamera.position.x + scene.size.width * scene.gameCamera.xScale / 2 - 1,
+                    y: 100)
+                scene.edgeScroll(deltaTime: 1.0 / Double(fps))
+            }
+            return scene.gameCamera.position.x - before
+        }
+        XCTAssertEqual(distance(fps: 30), distance(fps: 120), accuracy: 0.001)
+        XCTAssertGreaterThan(distance(fps: 60), 0)
+    }
+
+    func testCrowdSelectionSkipsLemmingsThatAlreadyHaveTheSkill() {
+        let level = LevelDefinition(id: "crowd", nameKey: .levelGreenHills, pack: .fun,
+                                    rows: ["E...X", "#####"], totalLemmings: 2, neededToSave: 1,
+                                    minReleaseRate: 99, timeLimitSeconds: 60, skillCounts: [.climber: 2])
+        let engine = GameEngine(level: level)
+        while engine.spawnedCount < 2 { engine.tick() }
+        engine.selectSkill(.climber)
+        let first = engine.lemmings[0]
+        engine.applySelectedSkill(to: first.id)
+        let scene = GameScene(engine: engine)
+        let point = CGPoint(x: CGFloat(first.x) * scene.tileSize + scene.tileSize / 2,
+                            y: scene.flipRow(first.y) + scene.tileSize * 0.35)
+        XCTAssertEqual(scene.nearestLiving(to: point), engine.lemmings[1].id)
+    }
+
+    func testBuilderWarnsExactlyForItsLastThreeBricks() {
+        var rows = Array(repeating: String(repeating: ".", count: 30), count: 15)
+        rows.append("E.............................")
+        rows.append(String(repeating: "#", count: 30))
+        let level = LevelDefinition(id: "builder", nameKey: .levelGreenHills, pack: .fun,
+                                    rows: rows, totalLemmings: 1, neededToSave: 1,
+                                    minReleaseRate: 99, timeLimitSeconds: 60, skillCounts: [.builder: 1])
+        let engine = GameEngine(level: level)
+        let scene = GameScene(engine: engine)
+        let view = SKView(frame: CGRect(x: 0, y: 0, width: 900, height: 520))
+        view.presentScene(scene)
+        var warnings = 0
+        scene.onBuilderWarning = { warnings += 1 }
+        for frame in 0..<1500 {
+            scene.update(Double(frame) / 60 + 1)
+            if let lem = engine.lemmings.first, lem.state == .walking {
+                engine.selectSkill(.builder)
+                engine.applySelectedSkill(to: lem.id)
+            }
+        }
+        XCTAssertEqual(warnings, 3)
+    }
+
+    func testControlPanelFitsPhoneAndDesktopWidths() throws {
+        for width: CGFloat in [320, 390, 844, 1466] {
+            for level in [LevelLibrary.all[0], LevelLibrary.all[2]] {
+                let panel = BottomControlPanel(engine: GameEngine(level: level),
+                                               isPaused: .constant(false), viewport: nil,
+                                               onJumpToColumn: { _ in })
+                    .environmentObject(LocalizationManager())
+                    .environmentObject(SoundManager())
+                let renderer = ImageRenderer(content: panel)
+                renderer.proposedSize = ProposedViewSize(width: width, height: nil)
+                let image = try XCTUnwrap(renderer.cgImage)
+                XCTAssertLessThanOrEqual(CGFloat(image.width), width, "panel overflows at \(width)")
+                XCTAssertLessThanOrEqual(image.height, 130)
+                write(image, "panel-\(level.id)-\(Int(width))")
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     /// The level-1 line: a Builder at the lip of the pit.

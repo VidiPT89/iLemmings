@@ -14,8 +14,10 @@
 - ✅ Release rate, fast-forward, Nuke, a clickable minimap with a viewport box, and a single bottom control panel with OUT / IN / TIME
 - ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with a distinct animation for every job — walking, falling, climbing, floating, digging, bashing, mining, building, blocking, shrugging, the Oh-No panic, splatting and drowning
 - ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it, each material drawn with its own pattern — dithered dirt, grass tufts, Builder brick staircases, riveted steel plates, spikes and animated water
-- ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber, confetti on victory
+- ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber
 - ✅ Eight built-in levels across Fun, Tricky, Taxing and Mayhem, including water that drowns (floaters do not save you)
+- ✅ Retro black playfield and result screen, audible Builder warnings on the last three bricks, and automatic pause when the app becomes inactive
+- ✅ Responsive control panel for portrait phones, localized control labels, and skill-aware crowd selection
 - ✅ SFX and haptic feedback on skill assignment, rescued lemmings, level win and level loss, with a one-tap mute
 - ✅ Pause, retry and win/lose flows with level unlocking
 - ✅ Bilingual PT-PT / English in-app language switch backed by real `.lproj` bundles, no need to change your device language
@@ -73,13 +75,17 @@ xcodebuild -project iLemmings.xcodeproj -scheme iLemmings-iOS -destination 'gene
 xcodebuild -project iLemmings.xcodeproj -scheme iLemmings-macOS -destination 'platform=macOS' build
 ```
 
-The suite covers the original's rules one by one, checks every built-in level is winnable, plays each level hundreds of times with random skills to check nothing is ever miscounted or buried in the ground, and renders the playfield off-screen. To save those renders as PNGs:
+The suite covers classic-inspired rules, checks every built-in level is winnable, plays each level hundreds of times with random skills to check nothing is ever miscounted or buried in the ground, and renders the playfield off-screen. To save those renders as PNGs:
 
 ```bash
 TEST_RUNNER_ILEMMINGS_SNAPSHOT_DIR=/tmp/ilemmings xcodebuild -project iLemmings.xcodeproj \
   -scheme iLemmings-macOS -destination 'platform=macOS' \
   -only-testing:iLemmingsTests/SceneSnapshotTests test
 ```
+
+## Current scope
+
+This is a tile-based interpretation, not a pixel-exact recreation of the 1991 game. The campaign has eight original levels. Terrain masks, shallow pixel-scale Builder stairs, a larger campaign and original retro music remain future work. Automated macOS tests include level solutions, 200 randomized playthroughs, rendering, narrow control panels, pause, selection and scrolling. An iOS simulator build verifies compilation; it does not replace playing on physical iPhone/iPad hardware.
 
 ## 📄 License
 

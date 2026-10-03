@@ -56,3 +56,9 @@
 "levelSunkenPlug" = "Sunken Plug";
 "levelObsidianDescent" = "Obsidian Descent";
 "levelLastBridge" = "Last Bridge";
+
+"releaseSlower" = "Slower release";
+"releaseFaster" = "Faster release";
+"fastForward" = "Fast-forward";
+"muteSound" = "Mute sound";
+"unmuteSound" = "Enable sound";

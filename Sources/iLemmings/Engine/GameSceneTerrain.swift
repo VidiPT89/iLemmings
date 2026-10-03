@@ -7,27 +7,7 @@ import SpriteKit
 /// and this one is about drawing the level it runs on.
 extension GameScene {
 
-    // MARK: - Background & terrain
-    //
-    // The original DOS Lemmings renders each level against a flat, dark
-    // backdrop with grainy, dithered terrain sprites — not a cheerful blue
-    // sky and flat-color blocks. This tries to get closer to that: a solid
-    // dark background per level pack, and speckled/noisy tile textures
-    // instead of flat fills.
-
-    func makeBackground() -> SKSpriteNode {
-        let color: SKColor
-        switch engine.level.pack {
-        case .fun: color = SKColor(red: 0.05, green: 0.08, blue: 0.10, alpha: 1)
-        case .tricky: color = SKColor(red: 0.09, green: 0.06, blue: 0.10, alpha: 1)
-        case .taxing: color = SKColor(red: 0.07, green: 0.07, blue: 0.08, alpha: 1)
-        case .mayhem: color = SKColor(red: 0.10, green: 0.03, blue: 0.03, alpha: 1)
-        }
-        let bg = SKSpriteNode(color: color, size: CGSize(width: 20_000, height: 20_000))
-        bg.position = CGPoint(x: worldWidth / 2, y: worldHeight / 2)
-        bg.zPosition = -10
-        return bg
-    }
+    // MARK: - Terrain and structures
 
     func flipRow(_ row: Int) -> CGFloat {
         CGFloat(engine.height - 1 - row) * tileSize

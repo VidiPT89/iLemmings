@@ -480,6 +480,32 @@ final class GameEngineTests: XCTestCase {
         XCTAssertTrue(engine.lemmings[0].exploded)
     }
 
+    func testExhaustedSkillStaysSelectedAndCannotBeSpentAgain() {
+        let engine = GameEngine(level: tinyLevel(rows: ["E...X", "#####"], skills: [.climber: 1]))
+        while engine.lemmings.isEmpty { engine.tick() }
+        assign(.climber, engine, to: engine.lemmings[0].id)
+        XCTAssertEqual(engine.selectedSkill, .climber)
+        XCTAssertEqual(engine.skillInventory[.climber], 0)
+        engine.applySelectedSkill(to: engine.lemmings[0].id)
+        XCTAssertEqual(engine.skillInventory[.climber], 0)
+    }
+
+    func testSkillEligibilityMatchesPermanentSkillsAndGroundJobs() {
+        let engine = GameEngine(level: tinyLevel(rows: ["E...X", "#####"],
+                                                skills: [.climber: 2, .builder: 2, .bomber: 2]))
+        var lem = Lemming(id: 0, x: 0, y: 0, state: .falling)
+        XCTAssertFalse(engine.canAssign(.builder, to: lem))
+        XCTAssertTrue(engine.canAssign(.climber, to: lem))
+        lem.hasClimber = true
+        XCTAssertFalse(engine.canAssign(.climber, to: lem))
+        lem.state = .walking
+        XCTAssertTrue(engine.canAssign(.builder, to: lem))
+        lem.countdownTicks = 10
+        XCTAssertFalse(engine.canAssign(.bomber, to: lem))
+        lem.state = .drowning(ticksLeft: 10)
+        XCTAssertFalse(engine.canAssign(.builder, to: lem))
+    }
+
     func testBuiltInLevelsAreWellFormed() {
         for level in LevelLibrary.all {
             XCTAssertTrue(level.rows.allSatisfy { $0.count == level.width }, level.id)

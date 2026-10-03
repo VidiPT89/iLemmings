@@ -35,6 +35,7 @@ final class GameScene: SKScene {
     var onLemmingTapped: ((Int) -> Void)?
     var onExplosion: (() -> Void)?
     var onSplat: (() -> Void)?
+    var onBuilderWarning: (() -> Void)?
     var onDrown: (() -> Void)?
     var onTogglePause: (() -> Void)?
     /// Any key at all, before it is interpreted. Returns true when it was
@@ -60,13 +61,12 @@ final class GameScene: SKScene {
         // shape was available, leaving huge black bars on wide screens.
         scaleMode = .resizeFill
         anchorPoint = .zero
-        backgroundColor = SKColor(red: 0.07, green: 0.06, blue: 0.05, alpha: 1)
+        backgroundColor = .black
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func didMove(to view: SKView) {
-        addChild(makeBackground())
         addChild(terrainNode)
         lastGrid = Array(repeating: Array(repeating: Tile.empty, count: engine.width), count: engine.height)
         updateTerrain()
@@ -91,6 +91,7 @@ final class GameScene: SKScene {
         let startX = CGFloat(engine.entranceColumn) * tileSize
         gameCamera.position = CGPoint(x: clampedCameraX(startX), y: worldHeight / 2)
         resizeViewport(to: view.bounds.size)
+        setEnginePaused(isEnginePaused)
         #if os(macOS)
         view.window?.acceptsMouseMovedEvents = true
         // Claim the keyboard up front. Clicking the playfield to assign a
@@ -105,7 +106,8 @@ final class GameScene: SKScene {
     /// of leaving every one of them walking on the spot.
     func setEnginePaused(_ paused: Bool) {
         isEnginePaused = paused
-        for node in lemmingNodes.values { node.isPaused = paused }
+        for node in children { node.isPaused = paused }
+        if paused { lastPointer = nil; hoverRing.isHidden = true }
     }
 
     private func updateHatch() {
@@ -160,7 +162,7 @@ final class GameScene: SKScene {
         // in one burst — a level's entire spawn queue and countdown timer
         // fast-forwarding in a fraction of a second, which is exactly what
         // made a level look broken/nonsensical after any real-world hitch.
-        let dt = min(currentTime - lastUpdateTime, 0.25)
+        let dt = max(0, min(currentTime - lastUpdateTime, 0.25))
         lastUpdateTime = currentTime
         guard !isEnginePaused else { return }
         accumulator += dt
@@ -177,7 +179,7 @@ final class GameScene: SKScene {
         if ticked { updateTerrain() }
         updateHatch()
         syncLemmingNodes(didTick: ticked)
-        edgeScroll()
+        edgeScroll(deltaTime: dt)
         updateHover()
         reportViewport()
     }
@@ -219,7 +221,7 @@ final class GameScene: SKScene {
                 node.position = target
                 addChild(node)
             } else if didTick {
-                let moveDuration = 1.0 / (engine.ticksPerSecond * Double(max(1, engine.gameSpeed)))
+                let moveDuration = 1.0 / engine.ticksPerSecond
                 node.run(.move(to: target, duration: moveDuration), withKey: "move")
             }
             node.isHidden = (lem.state == .dead)
@@ -228,10 +230,11 @@ final class GameScene: SKScene {
             if lem.state == .saved, node.action(forKey: "exit") == nil, node.alpha > 0 {
                 node.run(.fadeOut(withDuration: 0.3), withKey: "exit")
             }
+            node.speed = CGFloat(max(1, engine.gameSpeed))
             node.xScale = lem.facingRight ? abs(node.xScale) : -abs(node.xScale)
 
             updateAppearance(node, for: lem)
-            emitParticles(for: lem, at: target)
+            if didTick { emitParticles(for: lem, at: target) }
             previousStates[lem.id] = lem.state
         }
         for (id, node) in lemmingNodes where !seen.contains(id) {
@@ -250,6 +253,8 @@ final class GameScene: SKScene {
         if case .drowning = previous { wasDrown = true } else { wasDrown = false }
 
         switch lem.state {
+        case .building(let stepsLeft):
+            if (0...2).contains(stepsLeft), previous != lem.state { onBuilderWarning?() }
         case .basher, .miner, .digger:
             if tickCounter % 4 == 0 { addParticles(kind: .dust, at: position) }
         case .splatting:

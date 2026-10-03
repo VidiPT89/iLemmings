@@ -128,55 +128,50 @@ final class GameEngine: ObservableObject {
     /// digging/building jobs can be handed to any lemming working on the
     /// ground — so a Digger can be switched to a Builder mid-hole — but not
     /// to one that is falling, climbing, floating or blocking.
+    /// Shared by assignment and hit testing: an ineligible lemming must not
+    /// hide an eligible neighbour under the same cursor.
+    func canAssign(_ skill: LemSkill, to lem: Lemming) -> Bool {
+        guard !isWon, !isLost, lem.canReceiveSkill,
+              (skillInventory[skill] ?? 0) > 0 else { return false }
+        switch skill {
+        case .climber: return !lem.hasClimber
+        case .floater: return !lem.hasFloater
+        case .bomber: return lem.countdownTicks == 0
+        case .blocker:
+            return Self.isWorkingOnTheGround(lem.state) && !lemmings.contains {
+                $0.id != lem.id && $0.state == .blocking && $0.y == lem.y
+                    && Int($0.x.rounded()) == Int(lem.x.rounded())
+            }
+        case .builder:
+            if case .building = lem.state { return false }
+            return Self.isWorkingOnTheGround(lem.state)
+        case .basher: return lem.state != .basher && Self.isWorkingOnTheGround(lem.state)
+        case .miner: return lem.state != .miner && Self.isWorkingOnTheGround(lem.state)
+        case .digger: return lem.state != .digger && Self.isWorkingOnTheGround(lem.state)
+        }
+    }
+
     func applySelectedSkill(to lemmingID: Int) {
         guard let skill = selectedSkill,
               let idx = lemmings.firstIndex(where: { $0.id == lemmingID }),
-              (skillInventory[skill] ?? 0) > 0 else { return }
+              canAssign(skill, to: lemmings[idx]) else { return }
         var lem = lemmings[idx]
-        guard lem.canReceiveSkill else { return }
-
         switch skill {
-        case .climber:
-            guard !lem.hasClimber else { return }
-            lem.hasClimber = true
-        case .floater:
-            guard !lem.hasFloater else { return }
-            lem.hasFloater = true
-        case .bomber:
-            guard lem.countdownTicks == 0 else { return }
-            lem.countdownTicks = GameTuning.bomberFuseTicks
-        case .blocker:
-            let col = Int(lem.x.rounded())
-            let overlapsBlocker = lemmings.contains {
-                $0.id != lem.id && $0.state == .blocking && $0.y == lem.y && Int($0.x.rounded()) == col
-            }
-            guard Self.isWorkingOnTheGround(lem.state), !overlapsBlocker else { return }
-            lem.state = .blocking
-        case .builder:
-            // The original always lays exactly 12 bricks.
-            if case .building = lem.state { return }
-            guard Self.isWorkingOnTheGround(lem.state) else { return }
-            lem.state = .building(stepsLeft: 12)
-        case .basher:
-            guard lem.state != .basher, Self.isWorkingOnTheGround(lem.state) else { return }
-            lem.state = .basher
-        case .miner:
-            guard lem.state != .miner, Self.isWorkingOnTheGround(lem.state) else { return }
-            lem.state = .miner
-        case .digger:
-            guard lem.state != .digger, Self.isWorkingOnTheGround(lem.state) else { return }
-            lem.state = .digger
+        case .climber: lem.hasClimber = true
+        case .floater: lem.hasFloater = true
+        case .bomber: lem.countdownTicks = GameTuning.bomberFuseTicks
+        case .blocker: lem.state = .blocking
+        case .builder: lem.state = .building(stepsLeft: 12)
+        case .basher: lem.state = .basher
+        case .miner: lem.state = .miner
+        case .digger: lem.state = .digger
         }
         if [.blocker, .builder, .basher, .miner, .digger].contains(skill) {
             lem.actionProgress = 0
         }
-
         lemmings[idx] = lem
-        let remaining = (skillInventory[skill] ?? 1) - 1
-        skillInventory[skill] = remaining
-        if remaining <= 0, selectedSkill == skill {
-            selectedSkill = nil
-        }
+        skillInventory[skill, default: 0] -= 1
+        // Keep the slot selected even at zero, like a physical control panel.
     }
 
     private static func isWorkingOnTheGround(_ state: LemState) -> Bool {

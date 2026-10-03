@@ -3,6 +3,7 @@ import SpriteKit
 
 struct GameView: View {
     @EnvironmentObject var sound: SoundManager
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
     @AppStorage("unlockedLevelIndex") private var unlockedIndex = 0
 
@@ -70,6 +71,11 @@ struct GameView: View {
                 )
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active, !showBriefing, !showResult { isPaused = true }
+        }
+        .onChange(of: showResult) { _, _ in syncEnginePause() }
+        .onDisappear { scene.setEnginePaused(true) }
         .onChange(of: isPaused) { _, _ in syncEnginePause() }
         .onChange(of: showBriefing) { _, _ in syncEnginePause() }
         .onChange(of: engine.skillInventory) { _, newValue in
@@ -136,6 +142,7 @@ struct GameView: View {
         scene.onExplosion = { sound.play(.explode) }
         scene.onSplat = { sound.play(.splat) }
         scene.onDrown = { sound.play(.drown) }
+        scene.onBuilderWarning = { sound.play(.builderWarning) }
         // On the briefing any key starts the level, like the original.
         scene.onKeyPressed = {
             guard showBriefing else { return false }
@@ -160,7 +167,7 @@ struct GameView: View {
     }
 
     private func syncEnginePause() {
-        scene.setEnginePaused(isPaused || showBriefing)
+        scene.setEnginePaused(isPaused || showBriefing || showResult)
     }
 
     private func percent(_ lemmings: Int) -> Int {
@@ -212,6 +219,7 @@ private struct MiniMap: View {
     /// Clicking or dragging on the map scrolls the level there, as in the
     /// original.
     let onJumpToColumn: (Double) -> Void
+    var maximumWidth: CGFloat = 220
 
     private var aspect: CGFloat {
         CGFloat(max(engine.width, 1)) / CGFloat(max(engine.height, 1))
@@ -257,7 +265,7 @@ private struct MiniMap: View {
                 }
             }
         }
-        .frame(width: min(max(height * aspect, 72), 220), height: height)
+        .frame(width: min(max(height * aspect, 72), maximumWidth), height: height)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
         .overlay(GeometryReader { proxy in
             Color.clear
@@ -308,14 +316,9 @@ private struct DitheredSkillBackground: View {
     }
 }
 
-/// The original's single control panel fixed at the bottom of the screen —
-/// one row with the 8 skill buttons, Pause, Nuke and Mute on the left, and
-/// the green LCD counters (out/saved/time) on the right, all on the same
-/// line. Verified against an actual screenshot of the original (Wikipedia's
-/// Amiga_Lemmings.png) — a stacked stats-strip-above-icons layout, a
-/// floating top bar, a separate bottom tray, and floating zoom buttons were
-/// all earlier guesses that didn't match the real thing.
-private struct BottomControlPanel: View {
+/// A single retro control strip on wide screens; three compact rows keep
+/// every control and the minimap accessible on portrait phones.
+struct BottomControlPanel: View {
     @ObservedObject var engine: GameEngine
     @EnvironmentObject var loc: LocalizationManager
     @EnvironmentObject var sound: SoundManager
@@ -325,33 +328,67 @@ private struct BottomControlPanel: View {
     @State private var showNukeConfirm = false
 
     var body: some View {
-        HStack(spacing: 2) {
-            ControlButton(systemImage: "minus") { engine.changeReleaseRate(-1) }
-            Text("\(engine.releaseRate)")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundStyle(lcdGreen)
-                .frame(width: 22)
-            ControlButton(systemImage: "plus") { engine.changeReleaseRate(1) }
-            ForEach(LemSkill.allCases) { skill in
-                SkillButton(skill: skill, engine: engine)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 2) {
+                rateControls
+                skills
+                playbackControls
+                Spacer(minLength: 8)
+                MiniMap(engine: engine, viewport: viewport, onJumpToColumn: onJumpToColumn)
+                statsRow
             }
-            ControlButton(systemImage: "pause.fill") { isPaused = true }
-            ControlButton(systemImage: "flame.fill") { showNukeConfirm = true }
-            ControlButton(systemImage: engine.gameSpeed == 1 ? "forward.fill" : "forward.end.fill") {
-                engine.toggleFastForward()
+            VStack(spacing: 4) {
+                HStack(spacing: 2) { skills }
+                HStack(spacing: 2) {
+                    rateControls
+                    Spacer(minLength: 8)
+                    playbackControls
+                }
+                HStack(spacing: 4) {
+                    MiniMap(engine: engine, viewport: viewport, onJumpToColumn: onJumpToColumn, maximumWidth: 92)
+                    Spacer(minLength: 4)
+                    statsRow
+                }
             }
-            ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill") {
-                sound.isMuted.toggle()
-            }
-            Spacer(minLength: 8)
-            MiniMap(engine: engine, viewport: viewport, onJumpToColumn: onJumpToColumn)
-            Spacer(minLength: 8)
-            statsRow
         }
+        .padding(4)
         .background(Color.black)
         .overlay(Rectangle().strokeBorder(Color(red: 0.55, green: 0.6, blue: 0.65).opacity(0.6), lineWidth: 1))
         .confirmationDialog(loc.string(.nukeConfirm), isPresented: $showNukeConfirm, titleVisibility: .visible) {
             Button(loc.string(.nukeConfirmAction), role: .destructive) { engine.nukeAll() }
+        }
+    }
+
+    private var skills: some View {
+        ForEach(LemSkill.allCases) { skill in
+            SkillButton(skill: skill, engine: engine)
+        }
+    }
+
+    private var rateControls: some View {
+        Group {
+            ControlButton(systemImage: "minus", label: loc.string(.releaseSlower)) { engine.changeReleaseRate(-1) }
+                .disabled(engine.releaseRate == engine.level.minReleaseRate)
+            Text("\(engine.releaseRate)")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(lcdGreen)
+                .frame(width: 22)
+                .accessibilityLabel(loc.string(.briefingReleaseRate))
+                .accessibilityValue("\(engine.releaseRate)")
+            ControlButton(systemImage: "plus", label: loc.string(.releaseFaster)) { engine.changeReleaseRate(1) }
+                .disabled(engine.releaseRate == 99)
+        }
+    }
+
+    private var playbackControls: some View {
+        Group {
+            ControlButton(systemImage: "pause.fill", label: loc.string(.pauseTitle)) { isPaused = true }
+            ControlButton(systemImage: "flame.fill", label: loc.string(.nukeConfirmAction)) { showNukeConfirm = true }
+            ControlButton(systemImage: engine.gameSpeed == 1 ? "forward.fill" : "forward.end.fill",
+                          label: loc.string(.fastForward)) { engine.toggleFastForward() }
+                .accessibilityValue("\(engine.gameSpeed)×")
+            ControlButton(systemImage: sound.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                          label: loc.string(sound.isMuted ? .unmuteSound : .muteSound)) { sound.isMuted.toggle() }
         }
     }
 
@@ -393,6 +430,7 @@ private let controlButtonSize: CGFloat = 32
 
 private struct ControlButton: View {
     let systemImage: String
+    let label: String
     let action: () -> Void
 
     var body: some View {
@@ -403,6 +441,8 @@ private struct ControlButton: View {
                 .frame(width: controlButtonSize, height: controlButtonSize)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .help(label)
         .overlay(Rectangle().strokeBorder(Color(red: 0.4, green: 0.42, blue: 0.46), lineWidth: 1))
     }
 }
@@ -441,6 +481,8 @@ private struct SkillButton: View {
         .buttonStyle(.plain)
         .disabled(count == 0)
         .opacity(count == 0 ? 0.35 : 1)
+        .help(loc.string(skill.locKey))
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityLabel(loc.string(skill.locKey))
         .accessibilityValue("\(count)")
     }

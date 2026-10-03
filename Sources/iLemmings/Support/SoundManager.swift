@@ -7,11 +7,10 @@ final class SoundManager: ObservableObject {
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
-    private var started = false
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
 
     enum Effect {
-        case select, assign, saved, win, lose, explode, splat, drown
+        case select, assign, saved, win, lose, explode, splat, drown, builderWarning
 
         var frequency: Double {
             switch self {
@@ -23,6 +22,7 @@ final class SoundManager: ObservableObject {
             case .explode: return 110
             case .splat: return 90
             case .drown: return 140
+            case .builderWarning: return 1760
             }
         }
 
@@ -44,19 +44,18 @@ final class SoundManager: ObservableObject {
     }
 
     private func ensureStarted() {
-        guard !started else { return }
+        guard !engine.isRunning else { return }
         do {
             try engine.start()
-            started = true
         } catch {
-            started = false
+            return
         }
     }
 
     func play(_ effect: Effect) {
         guard !isMuted else { return }
         ensureStarted()
-        guard started, let buffer = makeBuffer(frequency: effect.frequency, duration: effect.duration) else { return }
+        guard engine.isRunning, let buffer = makeBuffer(frequency: effect.frequency, duration: effect.duration) else { return }
         player.scheduleBuffer(buffer, at: nil, options: .interrupts)
         if !player.isPlaying { player.play() }
     }

@@ -114,7 +114,8 @@ extension GameScene {
 
     #if os(macOS)
     override func keyDown(with event: NSEvent) {
-        guard let characters = event.charactersIgnoringModifiers, handleKey(characters) else {
+        guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
+              let characters = event.charactersIgnoringModifiers, handleKey(characters) else {
             return super.keyDown(with: event)
         }
     }
@@ -129,15 +130,17 @@ extension GameScene {
     #endif
 
     private func handleTap(at point: CGPoint) {
+        guard !isEnginePaused else { return }
         if let id = nearestLiving(to: point) {
             onLemmingTapped?(id)
         }
     }
 
-    private func nearestLiving(to point: CGPoint) -> Int? {
+    func nearestLiving(to point: CGPoint) -> Int? {
         let radius = tileSize * 1.15
         var best: (Int, CGFloat)?
         for lem in engine.lemmings where lem.canReceiveSkill {
+            if let skill = engine.selectedSkill, !engine.canAssign(skill, to: lem) { continue }
             let p = CGPoint(x: CGFloat(lem.x) * tileSize + tileSize / 2, y: flipRow(lem.y) + tileSize * 0.35)
             let d = hypot(p.x - point.x, p.y - point.y)
             if d <= radius, best == nil || d < best!.1 {
@@ -147,16 +150,19 @@ extension GameScene {
         return best?.0
     }
 
-    func edgeScroll() {
-        guard !isEnginePaused, let p = lastPointer else { return }
+    func edgeScroll(deltaTime: TimeInterval) {
+        guard !isEnginePaused, !didDrag, let p = lastPointer else { return }
         let half = size.width * gameCamera.xScale / 2
         let left = gameCamera.position.x - half
         let right = gameCamera.position.x + half
+        guard p.x >= left, p.x <= right,
+              p.y >= 0, p.y <= size.height * gameCamera.yScale else { return }
         let band = tileSize * 1.4
+        let distance = 144 * deltaTime
         if p.x < left + band {
-            pan(bySceneDelta: -2.4)
+            pan(bySceneDelta: -distance)
         } else if p.x > right - band {
-            pan(bySceneDelta: 2.4)
+            pan(bySceneDelta: distance)
         }
     }
 

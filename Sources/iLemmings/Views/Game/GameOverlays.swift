@@ -76,10 +76,10 @@ struct PauseOverlay: View {
         ZStack {
             Color.black.opacity(0.6).ignoresSafeArea()
             VStack(spacing: 20) {
-                Text(loc.string(.pauseTitle)).font(.largeTitle.bold()).foregroundStyle(.white)
-                Button(loc.string(.pauseResume), action: onResume).buttonStyle(BrandButtonStyle())
-                Button(loc.string(.pauseRestart), action: onRestart).buttonStyle(BrandButtonStyle())
-                Button(loc.string(.pauseMenu), action: onMenu).buttonStyle(BrandButtonStyle())
+                Text(loc.string(.pauseTitle)).font(.system(.largeTitle, design: .monospaced).bold()).foregroundStyle(.white)
+                Button(loc.string(.pauseResume), action: onResume).buttonStyle(RetroButtonStyle())
+                Button(loc.string(.pauseRestart), action: onRestart).buttonStyle(RetroButtonStyle())
+                Button(loc.string(.pauseMenu), action: onMenu).buttonStyle(RetroButtonStyle())
             }
             .padding(32)
         }
@@ -99,16 +99,19 @@ struct ResultView: View {
 
     var body: some View {
         ZStack {
-            if won {
-                ConfettiView()
-            }
+            Color.black.ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Image(systemName: won ? "checkmark.seal.fill" : "xmark.seal.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(won ? Color.green : Color.red)
-                    .transition(.scale.combined(with: .opacity))
-                Text(loc.string(won ? .levelWinTitle : .levelLoseTitle)).font(.title.bold())
+                if let image = LemmingSprites.standCGImageForUI {
+                    Image(decorative: image, scale: 1)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 64, height: 64)
+                }
+                Text(loc.string(won ? .levelWinTitle : .levelLoseTitle))
+                    .font(.system(.title, design: .monospaced).bold())
+                    .foregroundStyle(lcdGreen)
                 if won {
                     HStack(spacing: 6) {
                         ForEach(0..<3, id: \.self) { i in
@@ -135,17 +138,17 @@ struct ResultView: View {
                 // "next level", so both buttons did the same thing.
                 if won, hasNextLevel {
                     Button(loc.string(.nextLevel), action: onNext)
-                        .buttonStyle(BrandButtonStyle())
+                        .buttonStyle(RetroButtonStyle())
                     Button(loc.string(.backToLevels), action: onExit)
                         .buttonStyle(.plain)
                         .padding(.top, 4)
                 } else if won {
                     // Last level: there is nowhere to play on to.
                     Button(loc.string(.backToLevels), action: onExit)
-                        .buttonStyle(BrandButtonStyle())
+                        .buttonStyle(RetroButtonStyle())
                 } else {
                     Button(loc.string(.retryLevel), action: onRetry)
-                        .buttonStyle(BrandButtonStyle())
+                        .buttonStyle(RetroButtonStyle())
                     Button(loc.string(.backToLevels), action: onExit)
                         .buttonStyle(.plain)
                         .padding(.top, 4)
@@ -153,18 +156,19 @@ struct ResultView: View {
             }
             .padding(32)
         }
+        .preferredColorScheme(.dark)
+        .foregroundStyle(.white)
     }
 }
 
-private struct BrandButtonStyle: ButtonStyle {
+private struct RetroButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .fontWeight(.semibold)
+            .font(.system(.headline, design: .monospaced).bold())
             .frame(maxWidth: 260)
-            .padding()
-            .background(Color.brandGradient)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .padding(14)
+            .foregroundStyle(lcdGreen)
+            .background(configuration.isPressed ? Color(white: 0.20) : Color(white: 0.08))
+            .overlay(Rectangle().strokeBorder(lcdGreen.opacity(configuration.isPressed ? 1 : 0.5), lineWidth: 2))
     }
 }

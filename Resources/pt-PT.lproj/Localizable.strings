@@ -56,3 +56,9 @@
 "levelSunkenPlug" = "Tampão Submerso";
 "levelObsidianDescent" = "Descida de Obsidiana";
 "levelLastBridge" = "Última Ponte";
+
+"releaseSlower" = "Diminuir ritmo de saída";
+"releaseFaster" = "Aumentar ritmo de saída";
+"fastForward" = "Avanço rápido";
+"muteSound" = "Silenciar som";
+"unmuteSound" = "Ativar som";

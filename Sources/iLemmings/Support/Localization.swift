@@ -47,6 +47,7 @@ enum LocKey: String {
     case skillBasher
     case skillMiner
     case skillDigger
+    case releaseSlower, releaseFaster, fastForward, muteSound, unmuteSound
     case pauseTitle
     case pauseResume
     case pauseRestart
