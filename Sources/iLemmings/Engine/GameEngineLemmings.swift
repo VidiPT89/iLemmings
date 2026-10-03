@@ -59,11 +59,6 @@ extension GameEngine {
             }
         }
 
-        if case .shrugging(let ticksLeft) = lem.state {
-            lem.state = ticksLeft <= 0 ? .walking : .shrugging(ticksLeft: ticksLeft - 1)
-            return
-        }
-
         if tile(lem.y, col) == .water {
             drown(&lem)
             return
@@ -72,10 +67,26 @@ extension GameEngine {
             splat(&lem)
             return
         }
-        if tile(lem.y, col) == .exit {
+        if tile(lem.y, col) == .exit, lem.state != .falling, lem.state != .floating {
             lem.state = .saved
             lem.countdownTicks = 0
             countSaved()
+            return
+        }
+
+        // Ground jobs lose support immediately, even halfway through their
+        // action. Hazards above must be checked before the shrug animation.
+        switch lem.state {
+        case .walking, .blocking, .building, .basher, .miner, .digger, .shrugging:
+            if !tile(lem.y + 1, col).isSolid {
+                startFalling(&lem)
+                return
+            }
+        default: break
+        }
+
+        if case .shrugging(let ticksLeft) = lem.state {
+            lem.state = ticksLeft <= 0 ? .walking : .shrugging(ticksLeft: ticksLeft - 1)
             return
         }
 
@@ -121,11 +132,7 @@ extension GameEngine {
             }
 
         case .blocking:
-            // Stands still indefinitely, acting as an obstacle in walk() — but
-            // only while it still has ground under it.
-            if !tile(lem.y + 1, col).isSolid {
-                startFalling(&lem)
-            }
+            break
 
         case .building(let steps):
             lem.actionProgress += 1

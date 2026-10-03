@@ -506,6 +506,70 @@ final class GameEngineTests: XCTestCase {
         XCTAssertFalse(engine.canAssign(.builder, to: lem))
     }
 
+    func testExitDoesNotRescueALethalFall() {
+        let engine = GameEngine(level: tinyLevel(rows: ["E.X", "###"]))
+        var lem = Lemming(id: 0, x: 2, y: 0, state: .falling,
+                          fallDistance: GameTuning.maxSafeFall + 1,
+                          actionProgress: GameTuning.fallTicksPerStep - 1)
+        engine.stepLemming(&lem)
+        XCTAssertEqual(engine.savedCount, 0)
+        XCTAssertEqual(engine.deadCount, 1)
+        if case .splatting = lem.state {} else { XCTFail("lethal fall was rescued") }
+    }
+
+    func testSafeLandingAtExitIsRescuedAfterLanding() {
+        let engine = GameEngine(level: tinyLevel(rows: ["E.X", "###"]))
+        var lem = Lemming(id: 0, x: 2, y: 0, state: .falling,
+                          fallDistance: 2, actionProgress: GameTuning.fallTicksPerStep - 1)
+        engine.stepLemming(&lem)
+        XCTAssertEqual(lem.state, .walking)
+        engine.stepLemming(&lem)
+        XCTAssertEqual(engine.savedCount, 1)
+    }
+
+    func testGroundWorkersFallWhenTheirSupportDisappears() {
+        for state: LemState in [.walking, .shrugging(ticksLeft: 16), .basher, .miner, .digger,
+                               .building(stepsLeft: 5), .blocking] {
+            let engine = GameEngine(level: tinyLevel(rows: ["E...", "....", "####"]))
+            var lem = Lemming(id: 0, x: 1, y: 0, state: state)
+            engine.stepLemming(&lem)
+            XCTAssertEqual(lem.state, .falling, "unsupported \(state)")
+            XCTAssertEqual(engine.grid[0][2], .empty, "worker built in the air")
+        }
+    }
+
+    func testShruggingLemmingStillTriggersWater() {
+        let engine = GameEngine(level: tinyLevel(rows: ["EW..", "####"]))
+        var lem = Lemming(id: 0, x: 1, y: 0, state: .shrugging(ticksLeft: 16))
+        engine.stepLemming(&lem)
+        XCTAssertEqual(engine.deadCount, 1)
+    }
+
+    func testDeadlineEndsGameEvenDuringDeathAnimation() {
+        let level = tinyLevel(rows: ["EW..", "####"], total: 10, time: 4)
+        let engine = GameEngine(level: level)
+        for _ in 0..<80 { engine.tick() }
+        XCTAssertEqual(engine.secondsRemaining, 0)
+        XCTAssertTrue(engine.isLost)
+        let crowd = engine.lemmings.map(\.state)
+        let spawned = engine.spawnedCount
+        for _ in 0..<60 { engine.tick() }
+        XCTAssertEqual(engine.lemmings.map(\.state), crowd)
+        XCTAssertEqual(engine.spawnedCount, spawned)
+    }
+
+    func testEveryLocalizedStringExistsInBothLanguages() throws {
+        for language in ["pt-PT", "en"] {
+            let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
+            let bundle = try XCTUnwrap(Bundle(path: path))
+            for key in LocKey.allCases {
+                let value = bundle.localizedString(forKey: key.rawValue, value: "MISSING", table: "Localizable")
+                XCTAssertNotEqual(value, "MISSING", "\(language): \(key)")
+                XCTAssertFalse(value.isEmpty)
+            }
+        }
+    }
+
     func testBuiltInLevelsAreWellFormed() {
         for level in LevelLibrary.all {
             XCTAssertTrue(level.rows.allSatisfy { $0.count == level.width }, level.id)

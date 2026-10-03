@@ -84,6 +84,14 @@ final class LevelSolvabilityTests: XCTestCase {
 
         let walkers = engine.lemmings.filter { $0.state == .walking }
 
+        if levelID == "level7" || levelID == "level4" {
+            let skill: LemSkill = levelID == "level7" ? .digger : .miner
+            if let lead = walkers.first {
+                assign(engine, skill, to: lead.id)
+            }
+            return
+        }
+
         if levelID == "level6" {
             for lem in walkers where !lem.hasClimber {
                 assign(engine, .climber, to: lem.id)

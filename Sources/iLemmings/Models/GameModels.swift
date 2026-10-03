@@ -21,6 +21,19 @@ enum LemSkill: String, CaseIterable, Identifiable {
     case climber, floater, bomber, blocker, builder, basher, miner, digger
     var id: String { rawValue }
 
+    var helpKey: LocKey {
+        switch self {
+        case .climber: return .helpClimber
+        case .floater: return .helpFloater
+        case .bomber: return .helpBomber
+        case .blocker: return .helpBlocker
+        case .builder: return .helpBuilder
+        case .basher: return .helpBasher
+        case .miner: return .helpMiner
+        case .digger: return .helpDigger
+        }
+    }
+
     var locKey: LocKey {
         switch self {
         case .climber: return .skillClimber

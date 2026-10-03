@@ -93,30 +93,19 @@ enum LevelLibrary {
         )
     }()
 
-    /// One trap pit to bridge. Two gaps wasted the 12-brick staircase on
-    /// the first hole and left the second unwinnable.
+    /// A diagonal escape route through a deep earth shelf. A single Miner
+    /// opens the way for the crowd; the whole group must reach the lower exit.
     static let level4: LevelDefinition = {
         let width = 34
         let air = row(width, [(".", width)])
-        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let walk = row(width, [("#", 14), (".", 3), ("#", 14), ("X", 1), ("#", 2)])
-        let shaft = row(width, [("#", 14), (".", 3), ("#", 17)])
-        let hazards = row(width, [("#", 14), ("T", 3), ("#", 17)])
-        let bed = row(width, [("S", width)])
-        var rows: [String] = [air, air, entranceRow, air, air, walk]
-        rows.append(contentsOf: Array(repeating: shaft, count: 8))
-        rows.append(hazards)
-        rows.append(bed)
+        let entrance = row(width, [("S", 1), (".", 1), ("E", 1), (".", width - 3)])
+        let earth = row(width, [("S", 1), ("#", width - 1)])
+        let passage = row(width, [("S", 1), (".", 29), ("X", 1), (".", 3)])
         return LevelDefinition(
-            id: "level4",
-            nameKey: .levelObsidianDescent,
-            pack: .mayhem,
-            rows: rows,
-            totalLemmings: 16,
-            neededToSave: 8,
-            minReleaseRate: 8,
-            timeLimitSeconds: 240,
-            skillCounts: [.builder: 4, .blocker: 2, .floater: 1, .bomber: 1]
+            id: "level4", nameKey: .levelObsidianDescent, pack: .mayhem,
+            rows: [air, entrance, earth, earth, earth, passage, row(width, [("S", width)])],
+            totalLemmings: 16, neededToSave: 16, minReleaseRate: 8,
+            timeLimitSeconds: 180, skillCounts: [.miner: 1]
         )
     }()
 
@@ -176,34 +165,23 @@ enum LevelLibrary {
         )
     }()
 
-    /// Bridge a short water gap; steel only under the exit, so a Builder is
-    /// not stopped by a roof after three bricks.
+    /// Remove the plug under the hatch with one Digger, then let the whole
+    /// crowd fall safely into the lower gallery. Preserves the existing ID.
     static let level7: LevelDefinition = {
         let width = 32
         let air = row(width, [(".", width)])
-        let entranceRow = row(width, [(".", 2), ("E", 1), (".", width - 3)])
-        let dirt = row(width, [("#", 12), (".", 4), ("S", 3), ("X", 1), ("#", 12)])
-        let water = row(width, [("#", 12), ("W", 4), ("S", 4), ("#", 12)])
-        let bed = row(width, [("S", width)])
-        var rows: [String] = [air, air, entranceRow, air, air, dirt]
-        rows.append(contentsOf: Array(repeating: water, count: 2))
-        rows.append(bed)
+        let entrance = row(width, [("S", 1), (".", 1), ("E", 1), (".", width - 3)])
+        let earth = row(width, [("S", 1), ("#", width - 1)])
+        let passage = row(width, [("S", 1), (".", 27), ("X", 1), (".", 3)])
         return LevelDefinition(
-            id: "level7",
-            nameKey: .levelSunkenPlug,
-            pack: .taxing,
-            rows: rows,
-            totalLemmings: 14,
-            neededToSave: 8,
-            minReleaseRate: 8,
-            timeLimitSeconds: 220,
-            skillCounts: [.builder: 4, .blocker: 2, .bomber: 2, .miner: 2]
+            id: "level7", nameKey: .levelSunkenPlug, pack: .taxing,
+            rows: [air, entrance, earth, earth, earth, passage, row(width, [("S", width)])],
+            totalLemmings: 14, neededToSave: 14, minReleaseRate: 8,
+            timeLimitSeconds: 180, skillCounts: [.digger: 1]
         )
     }()
 
-    /// Same bridge puzzle as Green Hills, with water instead of spikes and
-    /// a higher save quota. A second gap on this map had no working line:
-    /// the 12-brick staircase spent itself on the first hole.
+    /// The final water crossing combines crowd control and bridge building.
     static let level8: LevelDefinition = {
         let width = 34
         let air = row(width, [(".", width)])

@@ -15,8 +15,10 @@
 - ✅ Hand-drawn pixel-art lemmings (green hair, blue overalls) with a distinct animation for every job — walking, falling, climbing, floating, digging, bashing, mining, building, blocking, shrugging, the Oh-No panic, splatting and drowning
 - ✅ Tile-based terrain that reacts in real time as lemmings dig, bash and build through it, each material drawn with its own pattern — dithered dirt, grass tufts, Builder brick staircases, riveted steel plates, spikes and animated water
 - ✅ Particle effects — dust while tunnelling, an explosion flash on the Bomber
-- ✅ Eight built-in levels across Fun, Tricky, Taxing and Mayhem, including water that drowns (floaters do not save you)
+- ✅ Eight built-in levels across Fun, Tricky, Taxing and Mayhem, including water that drowns (floaters do not save you), a one-Digger rescue and a one-Miner escape
 - ✅ Retro black playfield and result screen, audible Builder warnings on the last three bricks, and automatic pause when the app becomes inactive
+- ✅ In-game bilingual skill handbook, pause while reading help or confirming Nuke, and replay after a win
+- ✅ Scrollable briefing, pause, result and menu screens for small windows and landscape phones
 - ✅ Responsive control panel for portrait phones, localized control labels, and skill-aware crowd selection
 - ✅ SFX and haptic feedback on skill assignment, rescued lemmings, level win and level loss, with a one-tap mute
 - ✅ Pause, retry and win/lose flows with level unlocking

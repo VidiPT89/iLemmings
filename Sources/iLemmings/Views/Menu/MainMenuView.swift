@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MainMenuView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject var loc: LocalizationManager
     @Environment(\.colorScheme) private var scheme
     @State private var showLevels = false
@@ -19,41 +20,49 @@ struct MainMenuView: View {
                 Color.brandBackground(for: scheme).ignoresSafeArea()
                 DecorativeWalkersView().ignoresSafeArea()
 
-                VStack(spacing: 28) {
-                    Spacer()
+                GeometryReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 28) {
+                            Spacer()
 
-                    VStack(spacing: 8) {
-                        Image("LemmingMark")
-                            .interpolation(.high)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 96, height: 96)
-                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                            .shadow(color: .brandOrange.opacity(0.45), radius: 16)
-                            .offset(y: floatOffset)
-                        Text(loc.string(.appName))
-                            .font(.system(size: 44, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Color.brandGradient)
-                        Text(loc.string(.tagline))
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                            VStack(spacing: 8) {
+                                Image("LemmingMark")
+                                    .interpolation(.high)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 96, height: 96)
+                                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                    .shadow(color: .brandOrange.opacity(0.45), radius: 16)
+                                    .offset(y: floatOffset)
+                                Text(loc.string(.appName))
+                                    .font(.system(size: 44, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(Color.brandGradient)
+                                Text(loc.string(.tagline))
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            VStack(spacing: 12) {
+                                MenuButton(title: loc.string(.menuPlay), icon: "play.fill") { showPlay = true }
+                                MenuButton(title: loc.string(.menuLevels), icon: "list.bullet") { showLevels = true }
+                                MenuButton(title: loc.string(.menuSettings), icon: "gearshape.fill") { showSettings = true }
+                            }
+                            .frame(maxWidth: 280)
+                            .frame(maxWidth: .infinity)
+
+                            Spacer()
+                            Text(loc.string(.developedBy))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 16)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: proxy.size.height)
                     }
-
-                    Spacer()
-
-                    VStack(spacing: 12) {
-                        MenuButton(title: loc.string(.menuPlay), icon: "play.fill") { showPlay = true }
-                        MenuButton(title: loc.string(.menuLevels), icon: "list.bullet") { showLevels = true }
-                        MenuButton(title: loc.string(.menuSettings), icon: "gearshape.fill") { showSettings = true }
-                    }
-                    .frame(maxWidth: 280)
-                    .frame(maxWidth: .infinity)
-
-                    Spacer()
-                    Text(loc.string(.developedBy))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.bottom, 16)
                 }
             }
             .navigationDestination(isPresented: $showLevels) { LevelsView() }
@@ -62,6 +71,7 @@ struct MainMenuView: View {
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .onAppear {
+                guard !reduceMotion else { return }
                 withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
                     floatOffset = -10
                 }

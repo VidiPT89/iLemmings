@@ -20,6 +20,7 @@ struct GameView: View {
     /// The pre-level screen. The clock and the hatch wait until it's gone.
     @State private var showBriefing = true
     @State private var showResult = false
+    @State private var isDialogPresented = false
     @State private var earnedStars = 0
     @State private var lastSkillTotal: Int
     @State private var viewport: ClosedRange<Double>?
@@ -57,7 +58,8 @@ struct GameView: View {
                     engine: engine,
                     isPaused: $isPaused,
                     viewport: viewport,
-                    onJumpToColumn: { scene.centerCamera(onColumn: $0) }
+                    onJumpToColumn: { scene.centerCamera(onColumn: $0) },
+                    onDialogChanged: { isDialogPresented = $0 }
                 )
             }
 
@@ -74,6 +76,7 @@ struct GameView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active, !showBriefing, !showResult { isPaused = true }
         }
+        .onChange(of: isDialogPresented) { _, _ in syncEnginePause() }
         .onChange(of: showResult) { _, _ in syncEnginePause() }
         .onDisappear { scene.setEnginePaused(true) }
         .onChange(of: isPaused) { _, _ in syncEnginePause() }
@@ -149,7 +152,9 @@ struct GameView: View {
             showBriefing = false
             return true
         }
-        scene.onTogglePause = { if !showBriefing { isPaused.toggle() } }
+        scene.onTogglePause = {
+            if !showBriefing, !showResult, !isDialogPresented { isPaused.toggle() }
+        }
         scene.onViewportChanged = { viewport = $0 }
     }
 
@@ -167,7 +172,7 @@ struct GameView: View {
     }
 
     private func syncEnginePause() {
-        scene.setEnginePaused(isPaused || showBriefing || showResult)
+        scene.setEnginePaused(isPaused || showBriefing || showResult || isDialogPresented)
     }
 
     private func percent(_ lemmings: Int) -> Int {
@@ -192,6 +197,7 @@ struct GameView: View {
         showBriefing = true
         fresh.setEnginePaused(true)
         showResult = false
+        isDialogPresented = false
         earnedStars = 0
         viewport = nil
         lastSkillTotal = engine.skillInventory.values.reduce(0, +)
@@ -325,7 +331,9 @@ struct BottomControlPanel: View {
     @Binding var isPaused: Bool
     let viewport: ClosedRange<Double>?
     let onJumpToColumn: (Double) -> Void
+    var onDialogChanged: (Bool) -> Void = { _ in }
     @State private var showNukeConfirm = false
+    @State private var showHelp = false
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -354,6 +362,9 @@ struct BottomControlPanel: View {
         .padding(4)
         .background(Color.black)
         .overlay(Rectangle().strokeBorder(Color(red: 0.55, green: 0.6, blue: 0.65).opacity(0.6), lineWidth: 1))
+        .onChange(of: showNukeConfirm) { _, _ in onDialogChanged(showNukeConfirm || showHelp) }
+        .onChange(of: showHelp) { _, _ in onDialogChanged(showNukeConfirm || showHelp) }
+        .sheet(isPresented: $showHelp) { GameHelpView() }
         .confirmationDialog(loc.string(.nukeConfirm), isPresented: $showNukeConfirm, titleVisibility: .visible) {
             Button(loc.string(.nukeConfirmAction), role: .destructive) { engine.nukeAll() }
         }
@@ -382,6 +393,7 @@ struct BottomControlPanel: View {
 
     private var playbackControls: some View {
         Group {
+            ControlButton(systemImage: "questionmark", label: loc.string(.helpTitle)) { showHelp = true }
             ControlButton(systemImage: "pause.fill", label: loc.string(.pauseTitle)) { isPaused = true }
             ControlButton(systemImage: "flame.fill", label: loc.string(.nukeConfirmAction)) { showNukeConfirm = true }
             ControlButton(systemImage: engine.gameSpeed == 1 ? "forward.fill" : "forward.end.fill",

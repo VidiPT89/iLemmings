@@ -62,3 +62,15 @@
 "fastForward" = "Avanço rápido";
 "muteSound" = "Silenciar som";
 "unmuteSound" = "Ativar som";
+
+"helpTitle" = "Como jogar";
+"gameInstructions" = "Escolhe uma competência e depois um lemming. Guia o número necessário até à saída antes de acabar o tempo. Arrasta o terreno ou usa o minimapa para veres o caminho.";
+"keyboardInstructions" = "Teclado: 1–8 escolhem competências, +/− alteram o ritmo de saída, F ativa o avanço rápido e Espaço faz pausa.";
+"helpClimber" = "Passa a trepar paredes verticais. Vira-se e cai quando bate num teto.";
+"helpFloater" = "Passa a abrir um guarda-chuva nas quedas. Protege contra quedas altas, mas não contra água nem armadilhas.";
+"helpBomber" = "Inicia um rastilho de cinco segundos. A explosão remove a terra em redor, mas não destrói aço.";
+"helpBlocker" = "Para e faz os lemmings que se aproximam mudar de direção. Cai se o chão por baixo for removido.";
+"helpBuilder" = "Constrói até doze degraus. Os últimos três tijolos emitem um aviso. Quando parar, atribui novamente para continuar a construir.";
+"helpBasher" = "Escava horizontalmente na terra até encontrar aço ou espaço aberto.";
+"helpMiner" = "Escava na diagonal, para baixo. Para no aço e cai quando o túnel desemboca no ar.";
+"helpDigger" = "Escava verticalmente na terra. Para no aço. Atenção ao que está por baixo!";

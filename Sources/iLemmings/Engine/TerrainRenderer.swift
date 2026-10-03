@@ -9,7 +9,7 @@ import SpriteKit
 /// to every tile is what made this playfield read as flat coloured blocks.
 enum TerrainRenderer {
 
-    enum Style: Hashable { case dirt, grassCap, steel, trap, water, brick }
+    enum Style: Int, Hashable { case dirt, grassCap, steel, trap, water, brick }
 
     /// The four tiles around the one being drawn. Passing the tiles rather
     /// than booleans lets each material ask its own question: dirt wants to
@@ -60,7 +60,7 @@ enum TerrainRenderer {
             space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return SKTexture() }
 
-        var rng = SeededGenerator(seed: row * 97 + col * 13 + style.hashValue)
+        var rng = SeededGenerator(seed: row * 97 + col * 13 + style.rawValue * 7919)
         // Per-column fringe heights, fixed per tile, so a grass ledge has an
         // uneven silhouette against the sky instead of a ruled green line.
         let fringe = (0..<size).map { _ in Int.random(in: 0...3, using: &rng) }

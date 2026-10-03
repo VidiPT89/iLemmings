@@ -3,6 +3,7 @@ import SwiftUI
 /// A few lemmings strolling across the bottom of the main menu, purely
 /// decorative — the same pixel-art texture used in-game.
 struct DecorativeWalkersView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private struct Walker: Identifiable {
         let id = UUID()
         let delay: Double
@@ -26,7 +27,7 @@ struct DecorativeWalkersView: View {
                     walkerImage
                         .frame(width: 24 * walker.scale, height: 24 * walker.scale)
                         .position(
-                            x: animate ? proxy.size.width + 30 : -30,
+                            x: reduceMotion ? proxy.size.width * walker.y : (animate ? proxy.size.width + 30 : -30),
                             y: proxy.size.height * walker.y
                         )
                         .animation(
@@ -38,7 +39,8 @@ struct DecorativeWalkersView: View {
         }
         .allowsHitTesting(false)
         .opacity(0.35)
-        .onAppear { animate = true }
+        .accessibilityHidden(true)
+        .onAppear { animate = !reduceMotion }
     }
 
     @ViewBuilder

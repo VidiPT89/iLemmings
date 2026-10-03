@@ -22,7 +22,9 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
-enum LocKey: String {
+enum LocKey: String, CaseIterable {
+    case helpTitle, gameInstructions, keyboardInstructions
+    case helpClimber, helpFloater, helpBomber, helpBlocker, helpBuilder, helpBasher, helpMiner, helpDigger
     case appName
     case tagline
     case developedBy

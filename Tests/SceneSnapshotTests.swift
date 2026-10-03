@@ -72,6 +72,7 @@ final class SceneSnapshotTests: XCTestCase {
     func testOverlaysRender() throws {
         let loc = LocalizationManager()
         let level = LevelLibrary.all[0]
+        try render(GameHelpView().environmentObject(loc), "help")
         try render(LevelBriefing(level: level, number: 1, onStart: {}).environmentObject(loc), "4-briefing")
         try render(
             ResultView(won: true, stars: 2, rescuedPercent: 70, neededPercent: 50,
@@ -103,16 +104,16 @@ final class SceneSnapshotTests: XCTestCase {
             scene.resizeViewport(to: CGSize(width: 100, height: 500))
             scene.centerCamera(onColumn: 5)
             let before = scene.gameCamera.position.x
+            scene.lastPointer = CGPoint(
+                x: scene.gameCamera.position.x + scene.size.width * scene.gameCamera.xScale / 2 - 1,
+                y: 100)
             for _ in 0..<fps {
-                scene.lastPointer = CGPoint(
-                    x: scene.gameCamera.position.x + scene.size.width * scene.gameCamera.xScale / 2 - 1,
-                    y: 100)
                 scene.edgeScroll(deltaTime: 1.0 / Double(fps))
             }
             return scene.gameCamera.position.x - before
         }
         XCTAssertEqual(distance(fps: 30), distance(fps: 120), accuracy: 0.001)
-        XCTAssertGreaterThan(distance(fps: 60), 0)
+        XCTAssertEqual(distance(fps: 60), 144, accuracy: 0.001)
     }
 
     func testCrowdSelectionSkipsLemmingsThatAlreadyHaveTheSkill() {
@@ -171,6 +172,52 @@ final class SceneSnapshotTests: XCTestCase {
         }
     }
 
+    func testOverlaysFitShortAndNarrowViewports() throws {
+        let loc = LocalizationManager()
+        for size in [CGSize(width: 320, height: 568), CGSize(width: 844, height: 280)] {
+            let screens: [(String, AnyView)] = [
+                ("briefing", AnyView(LevelBriefing(level: LevelLibrary.all[0], number: 1, onStart: {}))),
+                ("pause", AnyView(PauseOverlay(onResume: {}, onRestart: {}, onMenu: {}))),
+                ("result", AnyView(ResultView(won: true, stars: 2, rescuedPercent: 70, neededPercent: 50,
+                                              hasNextLevel: true, onNext: {}, onRetry: {}, onExit: {})))
+            ]
+            for (name, screen) in screens {
+                let image = try hostedImage(screen.environmentObject(loc), size: size)
+                XCTAssertEqual(image.width, Int(size.width))
+                XCTAssertEqual(image.height, Int(size.height))
+                write(image, "responsive-\(name)-\(Int(size.width))")
+            }
+        }
+    }
+
+    func testShortResultCanScrollToItsActions() throws {
+        let content = ResultView(won: true, stars: 2, rescuedPercent: 70, neededPercent: 50,
+                                 hasNextLevel: true, onNext: {}, onRetry: {}, onExit: {})
+            .environmentObject(LocalizationManager())
+        let image = try hostedImage(content, size: CGSize(width: 844, height: 280), scrollToBottom: true)
+        write(image, "responsive-result-actions")
+    }
+
+    func testExcavationLevelsRenderOpenRoutes() throws {
+        for (level, skill, column) in [(LevelLibrary.level7, LemSkill.digger, 2),
+                                      (LevelLibrary.level4, LemSkill.miner, 3)] {
+            let engine = GameEngine(level: level)
+            let scene = GameScene(engine: engine)
+            let view = SKView(frame: CGRect(x: 0, y: 0, width: 900, height: 520))
+            view.presentScene(scene)
+            for frame in 0..<1200 {
+                scene.update(Double(frame) / 60 + 1)
+                if let lem = engine.lemmings.first(where: { $0.state == .walking }) {
+                    engine.selectSkill(skill)
+                    engine.applySelectedSkill(to: lem.id)
+                }
+            }
+            XCTAssertEqual(engine.tile(2, column), .empty)
+            settleLemmings(scene, engine: engine)
+            try snapshot(view, scene, "excavation-\(level.id)")
+        }
+    }
+
     // MARK: - Helpers
 
     /// The level-1 line: a Builder at the lip of the pit.
@@ -206,9 +253,49 @@ final class SceneSnapshotTests: XCTestCase {
     }
 
     private func render(_ content: some View, _ name: String) throws {
-        let renderer = ImageRenderer(content: content.frame(width: 600, height: 520))
-        guard let image = renderer.cgImage else { throw XCTSkip("no renderer available here") }
-        write(image, name)
+        write(try hostedImage(content, size: CGSize(width: 600, height: 520)), name)
+    }
+
+    /// ImageRenderer omits AppKit-backed scroll views. Host the real view
+    /// off-screen so a black rectangle cannot masquerade as a passing render.
+    private func hostedImage(_ content: some View, size: CGSize, scrollToBottom: Bool = false) throws -> CGImage {
+        let host = NSHostingView(rootView: content)
+        let window = NSWindow(contentRect: CGRect(origin: .zero, size: size),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        host.frame = CGRect(origin: .zero, size: size)
+        defer { window.close() }
+        host.layoutSubtreeIfNeeded()
+        window.displayIfNeeded()
+        if scrollToBottom {
+            func findScroll(in view: NSView) -> NSScrollView? {
+                if let scroll = view as? NSScrollView { return scroll }
+                return view.subviews.compactMap { findScroll(in: $0) }.first
+            }
+            let scroll = try XCTUnwrap(findScroll(in: host))
+            let document = try XCTUnwrap(scroll.documentView)
+            XCTAssertGreaterThan(document.bounds.height, scroll.contentView.bounds.height)
+            let y = document.isFlipped ? document.bounds.height - scroll.contentView.bounds.height : 0
+            scroll.contentView.scroll(to: CGPoint(x: 0, y: y))
+            scroll.reflectScrolledClipView(scroll.contentView)
+            host.layoutSubtreeIfNeeded()
+        }
+        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        host.cacheDisplay(in: host.bounds, to: bitmap)
+        let image = try XCTUnwrap(bitmap.cgImage)
+        // Account for Retina scale without changing the layout under test.
+        let context = try XCTUnwrap(CGContext(data: nil, width: Int(size.width), height: Int(size.height),
+                                             bitsPerComponent: 8, bytesPerRow: 0,
+                                             space: CGColorSpaceCreateDeviceRGB(),
+                                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(origin: .zero, size: size))
+        let result = try XCTUnwrap(context.makeImage())
+        let data = try XCTUnwrap(result.dataProvider?.data)
+        let bytes = try XCTUnwrap(CFDataGetBytePtr(data))
+        let distinct = Set(UnsafeBufferPointer(start: bytes, count: CFDataGetLength(data)))
+        XCTAssertGreaterThan(distinct.count, 10, "overlay rendered without visible content")
+        return result
     }
 
     private func write(_ image: CGImage, _ name: String) {

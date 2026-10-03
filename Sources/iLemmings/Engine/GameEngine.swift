@@ -183,6 +183,7 @@ final class GameEngine: ObservableObject {
 
     /// Classic Nuke: arms one living lemming per tick, like LemmingsJS.
     func nukeAll() {
+        guard !nukeArmed, !isWon, !isLost else { return }
         nukeArmed = true
         nextNukeIndex = 0
     }
@@ -193,6 +194,13 @@ final class GameEngine: ObservableObject {
 
         if tickCounter % Int(ticksPerSecond) == 0, secondsRemaining > 0 {
             secondsRemaining -= 1
+        }
+
+        // The deadline is authoritative: death animations cannot grant extra
+        // time to rescue the crowd or release another lemming.
+        if secondsRemaining <= 0 {
+            evaluateEndConditions()
+            return
         }
 
         if spawnedCount < level.totalLemmings, !nukeArmed {
@@ -262,15 +270,7 @@ final class GameEngine: ObservableObject {
         // against a full clock with nothing alive on screen.
         let everyoneIsOut = spawnedCount >= level.totalLemmings || nukeArmed
         let allLemmingsResolved = everyoneIsOut && lemmings.allSatisfy { !$0.isAlive }
-        let finishingAnimation = lemmings.contains {
-            switch $0.state {
-            case .splatting, .drowning, .ohNo: return true
-            default: return false
-            }
-        }
-        // Wait for splat/Oh-No so the last death is visible; otherwise end
-        // when everyone is resolved or the clock hits zero.
-        guard allLemmingsResolved || (secondsRemaining <= 0 && !finishingAnimation) else { return }
+        guard allLemmingsResolved || secondsRemaining <= 0 else { return }
         if savedCount >= level.neededToSave {
             isWon = true
         } else {

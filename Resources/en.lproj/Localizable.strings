@@ -62,3 +62,15 @@
 "fastForward" = "Fast-forward";
 "muteSound" = "Mute sound";
 "unmuteSound" = "Enable sound";
+
+"helpTitle" = "How to play";
+"gameInstructions" = "Select a skill, then select a lemming. Guide enough lemmings to the exit before time runs out. Drag the terrain or use the minimap to look ahead.";
+"keyboardInstructions" = "Keyboard: 1–8 select skills, +/− change release rate, F toggles fast-forward, Space pauses.";
+"helpClimber" = "Permanently climbs vertical walls. Turns and falls when it hits a ceiling.";
+"helpFloater" = "Permanently opens an umbrella during a fall. Protects against long drops, but not water or traps.";
+"helpBomber" = "Starts a five-second fuse. The explosion removes nearby earth, but cannot destroy steel.";
+"helpBlocker" = "Stops and turns approaching lemmings around. Falls if its supporting ground is removed.";
+"helpBuilder" = "Builds up to twelve steps. The last three bricks sound a warning. Assign again after it stops to continue building.";
+"helpBasher" = "Tunnels horizontally through earth until steel or open space stops the job.";
+"helpMiner" = "Digs diagonally downwards. Stops at steel and falls when the tunnel opens into the air.";
+"helpDigger" = "Digs straight down through earth. Stops at steel. Watch what lies below!";

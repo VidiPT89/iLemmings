@@ -159,11 +159,15 @@ extension GameScene {
               p.y >= 0, p.y <= size.height * gameCamera.yScale else { return }
         let band = tileSize * 1.4
         let distance = 144 * deltaTime
+        let previousCameraX = gameCamera.position.x
         if p.x < left + band {
             pan(bySceneDelta: -distance)
         } else if p.x > right - band {
             pan(bySceneDelta: distance)
         }
+        // The pointer stays at the same screen position while the world
+        // scrolls beneath it, even without a new mouse-moved event.
+        lastPointer = CGPoint(x: p.x + gameCamera.position.x - previousCameraX, y: p.y)
     }
 
     func updateHover() {
